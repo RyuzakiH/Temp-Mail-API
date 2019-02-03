@@ -14,8 +14,6 @@ var availableDomains = client.AvailableDomains;
 // To get Mailbox
 var mails = client.Inbox.Refresh();
 
-var ms = client.Inbox.ExtractSimpleMails();
-
 // To change email to a specific login@domain
 client.Change("loginexample", availableDomains[0]);
 

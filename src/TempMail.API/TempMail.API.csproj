@@ -2,6 +2,13 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
+    <Authors>Hazem Ahmed Amr</Authors>
+    <Company>Zero</Company>
+    <Product />
+    <Description>Unofficial API for temp-mail.org</Description>
+    <RepositoryUrl></RepositoryUrl>
+    <PackageProjectUrl>https://github.com/RyuzakiH/Temp-Mail-API</PackageProjectUrl>
+    <PackageTags>api library tempmail temp-mail.org HTTP mail email</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>

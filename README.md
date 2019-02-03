@@ -6,22 +6,24 @@ It can be used to generate temporary emails, it can help in making bots or anyth
 # Usage
 ```csharp
 
-var session = new Session();
+var client = new Client();
 
 // To get the available domains
-var availableDomains = session.AvailableDomains;
+var availableDomains = client.AvailableDomains;
 
 // To get Mailbox
-var mails = session.Inbox.Refresh();
+var mails = client.Inbox.Refresh();
+
+var ms = client.Inbox.ExtractSimpleMails();
 
 // To change email to a specific login@domain
-session.Change("loginexample", availableDomains[0]);
+client.Change("loginexample", availableDomains[0]);
 
 // To delete email and get a new one
-session.Delete();
+client.Delete();
 
 // To get the current email
-session.Email;
+var email = client.Email;
 
 ```
 

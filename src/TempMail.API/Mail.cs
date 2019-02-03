@@ -1,9 +1,9 @@
+using MimeKit;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
-using MimeKit;
+using TempMail.API.Extensions;
 
 namespace TempMail.API
 {
@@ -72,7 +72,7 @@ namespace TempMail.API
 
         private static Mail ConvertMessageToMail(MimeMessage message)
         {
-            return (Mail)Utilities.CastObjectToAnotherType(message, typeof(Mail));
+            return (Mail)message.CastTo(typeof(Mail));
         }
 
 

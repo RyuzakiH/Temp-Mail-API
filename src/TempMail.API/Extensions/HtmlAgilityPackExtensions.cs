@@ -1,10 +1,8 @@
 ﻿using HtmlAgilityPack;
-using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 
-namespace TempMail.API
+namespace TempMail.API.Extensions
 {
     public static class HtmlAgilityPackExtensions
     {

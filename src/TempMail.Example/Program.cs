@@ -53,12 +53,13 @@ namespace TempMail.Example
 
         private static void SendFakeMails(int count, string temp_email, int delay = 1000)
         {
-            var from = new MailAddress("from@gmail.com", "Ryuzaki"); // Edit this
+            //var from = new MailAddress("from@gmail.com", "Ryuzaki"); // Edit this
+            var from = new MailAddress("zomablacktest@gmail.com", "Ryuzaki"); // Edit this
             var to = new MailAddress(temp_email, "TempMail Name");
 
             for (int i = 0; i < count; i++)
             {
-                SendMail(from, to, "password", $"Subject {i}", $"Fake Body {i}"); // Edit password here
+                SendMail(from, to, "BlackZer0", $"Subject {i}", $"Fake Body {i}"); // Edit password here
 
                 Thread.Sleep(delay);
             }

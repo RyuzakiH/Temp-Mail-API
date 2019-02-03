@@ -1,11 +1,12 @@
+using HtmlAgilityPack;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Text;
-using HtmlAgilityPack;
-using Newtonsoft.Json;
 using TempMail.API.Models;
+using TempMail.API.Utilities;
 
 namespace TempMail.API
 {
@@ -18,10 +19,10 @@ namespace TempMail.API
         public const string DELETE_URL = "https://temp-mail.org/en/option/delete";
 
         
-        private CookieContainer _cookies;
+        private CookieContainer cookies;
 
-        private List<string> _availableDomains;
-        public List<string> AvailableDomains => _availableDomains ?? (_availableDomains = GetAvailableDomains());
+        private List<string> availableDomains;
+        public List<string> AvailableDomains => availableDomains ?? (availableDomains = GetAvailableDomains());
 
 
         private Change ChangePage;
@@ -35,7 +36,7 @@ namespace TempMail.API
         public Client()
         {
             //_document = new HtmlDocument();
-            _cookies = new CookieContainer();
+            cookies = new CookieContainer();
 
             Inbox = new Inbox(this);
 
@@ -99,12 +100,12 @@ namespace TempMail.API
 
         public Cookie GetCsrfCookie()
         {
-            return _cookies.GetCookies(new Uri(BASE_URL))["csrf"];
+            return cookies.GetCookies(new Uri(BASE_URL))["csrf"];
         }
 
         private void UpdateEmailCookie()
         {
-            _cookies.SetCookies(new Uri(BASE_URL), $"mail={Email}");
+            cookies.SetCookies(new Uri(BASE_URL), $"mail={Email}");
         }
 
 
@@ -182,7 +183,7 @@ namespace TempMail.API
                     { "Upgrade-Insecure-Requests", "1"}
                 },
                 Encoding = Encoding.UTF8,
-                CookieContainer = _cookies
+                CookieContainer = cookies
             };
         }
 

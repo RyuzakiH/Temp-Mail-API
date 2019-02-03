@@ -2,8 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
-using System.Web.Script.Serialization;
 using HtmlAgilityPack;
+using Newtonsoft.Json;
 
 namespace TempMail
 {
@@ -92,7 +92,7 @@ namespace TempMail
                 if (client.StatusCode != HttpStatusCode.OK)
                     return false;
 
-                Email = (new JavaScriptSerializer().Deserialize<object>(res) as Dictionary<string, object>)?["mail"].ToString();
+                Email = (JsonConvert.DeserializeObject<Dictionary<string, object>>(res))?["mail"].ToString();
 
                 UpdateEmailCookie();
 

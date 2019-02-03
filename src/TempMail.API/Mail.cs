@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using MimeKit;
@@ -60,7 +61,7 @@ namespace TempMail.API
         public static Mail Parse(string raw_mail)
         {
             var message = Load(GenerateStreamFromString(raw_mail));
-
+            
             return ConvertMessageToMail(message);
         }
 

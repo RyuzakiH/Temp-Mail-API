@@ -73,7 +73,7 @@ namespace TempMail.Example
             await Task.Run(() => Thread.Sleep(10000));
 
             // To get Mailbox
-            var mails = client.Inbox.RefreshAsync();
+            var mails = await client.Inbox.RefreshAsync();
 
             // Prints Client Session data like current email, mails, ...etc
             // Note: edit to print what you need
@@ -97,7 +97,8 @@ namespace TempMail.Example
             Console.WriteLine($"Inbox:");
 
             Console.WriteLine(string.Join('\n',
-                client.Inbox.Mails.Select(mail => $"\tSender: {mail.From.FirstOrDefault().Name}\n\tSubject: {mail.Subject}\n")));
+                client.Inbox.Mails.Select(mail => 
+                $"\tSender: {mail.From.FirstOrDefault().Name}\n\tSubject: {mail.Subject}\n\tBody: {mail.TextBody}")));
         }
 
         private static void SendFakeMails(int count, string temp_email, int delay = 1000)

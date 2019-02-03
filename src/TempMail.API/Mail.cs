@@ -4,7 +4,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using MimeKit;
 
-namespace TempMail
+namespace TempMail.API
 {
     public class Mail : MimeMessage
     {
@@ -28,20 +28,24 @@ namespace TempMail
         public string StrSender { get; set; }
 
 
-        public static Mail FromId(Session session, string id)
+        public static Mail FromId(Client session, string id)
         {
             var sourceUrl = $"https://temp-mail.org/en/source/{id}";
 
-            return GetMailFromRaw(session.GET(sourceUrl), id);
+            var raw_mail = session.GET(sourceUrl).Result;
+
+            return GetMailFromRaw(raw_mail, id);
         }
 
-        public static Mail FromLink(Session session, string link)
+        public static Mail FromLink(Client session, string link)
         {
             var id = ExtractId(link);
 
             var sourceUrl = string.Format("https://temp-mail.org/en/source/{0}", id);
 
-            return GetMailFromRaw(session.GET(sourceUrl), id);
+            var raw_mail = session.GET(sourceUrl).Result;
+
+            return GetMailFromRaw(raw_mail, id);
         }
 
         private static Mail GetMailFromRaw(string raw_mail, string id)

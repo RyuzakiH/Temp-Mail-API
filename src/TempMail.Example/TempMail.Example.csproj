@@ -6,7 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\TempMail.API\TempMail.API.csproj" />
+    <ProjectReference Include="..\TempMail.API\TempMail.API.csproj" />
   </ItemGroup>
 
 </Project>

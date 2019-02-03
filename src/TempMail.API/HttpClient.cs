@@ -14,6 +14,7 @@ public class HttpClient : WebClient
 
     public HttpClient()
     {
+        DefaultHeaders = new WebHeaderCollection();
         CookieContainer = new CookieContainer();
         AllowAutoRedirect = true;
         KeepAlive = true;
@@ -22,11 +23,8 @@ public class HttpClient : WebClient
 
     protected override WebRequest GetWebRequest(Uri address)
     {
-        if (DefaultHeaders != null)
-        {
-            foreach (string item in DefaultHeaders)
-                this.Headers.Set(item, DefaultHeaders[item]);
-        }
+        foreach (string header in DefaultHeaders)
+            this.Headers.Set(header, DefaultHeaders[header]);
 
         var request = (HttpWebRequest)base.GetWebRequest(address);
         request.CookieContainer = this.CookieContainer;

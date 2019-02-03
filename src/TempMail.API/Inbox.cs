@@ -2,18 +2,19 @@
 using System.Linq;
 using HtmlAgilityPack;
 
-namespace TempMail
+namespace TempMail.API
 {
     public class Inbox
     {
-        private readonly Session _session;
-        private readonly HtmlDocument _document;
+        private readonly Client sessionClient;
+
+        private HtmlDocument _document;
 
         public List<Mail> Mails;
 
-        public Inbox(Session session)
+        public Inbox(Client session)
         {
-            _session = session;
+            sessionClient = session;
             _document = new HtmlDocument();
             Mails = new List<Mail>();
         }
@@ -21,7 +22,7 @@ namespace TempMail
 
         public IEnumerable<Mail> Refresh()
         {
-            _document.LoadHtml(_session.GET("https://temp-mail.org/en/option/check"));
+            _document = sessionClient.GetHtmlDocument(Client.CHECK_URL);
 
             Mails.AddRange(GetNewMails(ExtractSimpleMails()));
 
@@ -37,15 +38,15 @@ namespace TempMail
 
         private Mail ExtractSimpleMail(HtmlNode tr)
         {
-            var a = tr.Descendants("td").First().FirstChild;
+            var a = tr.Descendants("td").FirstOrDefault()?.FirstChild;
 
             var link = a.GetAttributeValue("href", null);
 
             return new Mail()
             {
                 Id = Mail.ExtractId(link),
-                Subject = Utilities.GetElementsByClassName(_document, "title-subject").ToList()[0].InnerText,
-                StrSender = a.InnerText,
+                Subject = tr.GetElementsByClassName("title-subject").FirstOrDefault()?.InnerText,
+                StrSender = a?.InnerText,
                 Link = link
             };
         }
@@ -53,7 +54,7 @@ namespace TempMail
         private IEnumerable<Mail> GetNewMails(IEnumerable<Mail> mails)
         {
             return mails.Where(mail => Mails.Count(m => m.Id == mail.Id) == 0)
-                .Select(mail => Mail.FromId(_session, mail.Id)).ToList();
+                .Select(mail => Mail.FromId(sessionClient, mail.Id)).ToList();
         }
 
     }

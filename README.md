@@ -1,4 +1,7 @@
-# Temp-Mail-API
+Temp-Mail-API
+[![NuGet](https://img.shields.io/nuget/v/TempMail.API.svg?maxAge=60)](https://www.nuget.org/packages/TempMail.API)
+===============
+
 Unofficial API for [TempMail](https://temp-mail.org) in .NET
 
 It can be used to generate temporary emails, it can help in making bots or anything else.

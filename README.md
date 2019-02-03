@@ -27,6 +27,9 @@ var email = client.Email;
 
 ```
 
+Full Test Example [Here](https://github.com/RyuzakiH/Temp-Mail-API/blob/master/src/TempMail.Example/Program.cs)
+
 # Dependencies
 * [HtmlAgilityPack](https://www.nuget.org/packages/HtmlAgilityPack)
 * [MimeKit](https://www.nuget.org/packages/MimeKit)
+* [Newtonsoft.Json](https://www.nuget.org/packages/Newtonsoft.Json)

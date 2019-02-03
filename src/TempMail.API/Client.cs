@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Text;
+using System.Threading.Tasks;
 using TempMail.API.Models;
 using TempMail.API.Utilities;
 
@@ -18,7 +19,7 @@ namespace TempMail.API
         public const string CHECK_URL = "https://temp-mail.org/en/option/check";
         public const string DELETE_URL = "https://temp-mail.org/en/option/delete";
 
-        
+
         private CookieContainer cookies;
 
         private List<string> availableDomains;
@@ -35,22 +36,31 @@ namespace TempMail.API
 
         public Client()
         {
-            //_document = new HtmlDocument();
             cookies = new CookieContainer();
 
             Inbox = new Inbox(this);
 
             ChangePage = new Change(this);
-
-            CreateNewSession();
         }
 
-
-        private void CreateNewSession()
+        /// <summary>
+        /// Starts a new client session and get a new temporary email
+        /// </summary>
+        public void StartNewSession()
         {
             var document = GetHtmlDocument(MAIN_PAGE_URL);
 
             Email = ExtractEmail(document);
+        }
+
+        /// <summary>
+        /// Starts a new client session and get a new temporary email
+        /// </summary>
+        public async Task StartNewSessionAsync()
+        {
+            var document = await GetHtmlDocumentAsync(MAIN_PAGE_URL);
+
+            Email = await Task.Run(() => ExtractEmail(document));
         }
 
         private string ExtractEmail(HtmlDocument document)
@@ -61,7 +71,7 @@ namespace TempMail.API
 
 
         /// <summary>
-        /// Changes the temporary email to ex: login@domain .
+        /// Changes the temporary email to ex: login@domain
         /// </summary>
         /// <param name="login">New temporary email login</param>
         /// <param name="domain">New temporary email domain</param>
@@ -70,13 +80,23 @@ namespace TempMail.API
             return (Email = ChangePage.ChangeEmail(login, domain));
         }
 
+        /// <summary>
+        /// Changes the temporary email to ex: login@domain
+        /// </summary>
+        /// <param name="login">New temporary email login</param>
+        /// <param name="domain">New temporary email domain</param>
+        public async Task<string> ChangeAsync(string login, string domain)
+        {
+            return (Email = await ChangePage.ChangeEmailAsync(login, domain));
+        }
+
 
         /// <summary>
         /// Deletes the temporary email and gets a new one.
         /// </summary>
         public bool Delete()
         {
-            var response = GET(DELETE_URL);
+            var response = Get(DELETE_URL);
 
             if (response.StatusCode != HttpStatusCode.OK)
                 return false;
@@ -88,6 +108,22 @@ namespace TempMail.API
             return true;
         }
 
+        /// <summary>
+        /// Deletes the temporary email and gets a new one.
+        /// </summary>
+        public async Task<bool> DeleteAsync()
+        {
+            var response = await GetAsync(DELETE_URL);
+
+            if (response.StatusCode != HttpStatusCode.OK)
+                return false;
+
+            Email = (await Task.Run(() => JsonConvert.DeserializeObject<Dictionary<string, object>>(response.Result)))?["mail"].ToString();
+
+            await Task.Run(() => UpdateEmailCookie());
+
+            return true;
+        }
 
 
         private List<string> GetAvailableDomains()
@@ -114,11 +150,23 @@ namespace TempMail.API
         /// Sends a get request to the Url provided using this session cookies.
         /// </summary>
         /// <returns> Response object containing the status code and the result of the response </returns>
-        public Response GET(string url)
+        public Response Get(string url)
         {
             using (var client = CreateHttpClient())
             {
                 return new Response { StatusCode = client.StatusCode, Result = client.DownloadString(url) };
+            }
+        }
+
+        /// <summary>
+        /// Sends a get request to the Url provided using this session cookies.
+        /// </summary>
+        /// <returns> Response object containing the status code and the result of the response </returns>
+        public async Task<Response> GetAsync(string url)
+        {
+            using (var client = CreateHttpClient())
+            {
+                return new Response { StatusCode = client.StatusCode, Result = await client.DownloadStringTaskAsync(url) };
             }
         }
 
@@ -139,9 +187,26 @@ namespace TempMail.API
         }
 
         /// <summary>
+        /// Sends a get request to the Url provided using this session cookies.
+        /// </summary>
+        /// <returns> HtmlDocument of the result </returns>
+        public async Task<HtmlDocument> GetHtmlDocumentAsync(string url)
+        {
+            using (var client = CreateHttpClient())
+            {
+                var response = await client.DownloadStringTaskAsync(url);
+
+                var document = new HtmlDocument();
+                await Task.Run(() => document.LoadHtml(response));
+
+                return document;
+            }
+        }
+
+        /// <summary>
         /// Sends a post request to the Url provided using this session cookies and returns the string result.
         /// </summary>
-        public string POST(string url, string data)
+        public string Post(string url, string data)
         {
             using (var client = CreateHttpClient())
             {
@@ -150,10 +215,22 @@ namespace TempMail.API
         }
 
         /// <summary>
+        /// Sends a post request to the Url provided using this session cookies.
+        /// </summary>
+        /// <returns> string result </returns>
+        public async Task<string> PostAsync(string url, string data)
+        {
+            using (var client = CreateHttpClient())
+            {
+                return await client.UploadStringTaskAsync(url, data);
+            }
+        }
+
+        /// <summary>
         /// Sends a post request to the Url provided using this session cookies and provided headers.
         /// </summary>
         /// <returns> Response object containing the status code and the result of the response </returns>
-        public Response POST(string url, string data, WebHeaderCollection headers)
+        public Response Post(string url, string data, WebHeaderCollection headers)
         {
             using (var client = CreateHttpClient())
             {
@@ -161,6 +238,24 @@ namespace TempMail.API
                     client.Headers.Set(header, headers[header]);
 
                 return new Response { StatusCode = client.StatusCode, Result = client.UploadString(url, data) };
+            }
+        }
+
+        /// <summary>
+        /// Sends a post request to the Url provided using this session cookies and provided headers.
+        /// </summary>
+        /// <returns> Response object containing the status code and the result of the response </returns>
+        public async Task<Response> PostAsync(string url, string data, WebHeaderCollection headers)
+        {
+            using (var client = CreateHttpClient())
+            {
+                await Task.Run(() =>
+                {
+                    foreach (string header in headers)
+                        client.Headers.Set(header, headers[header]);
+                });
+
+                return new Response { StatusCode = client.StatusCode, Result = await client.UploadStringTaskAsync(url, data) };
             }
         }
 

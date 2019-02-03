@@ -1,33 +1,54 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Net;
-using System.Text;
+﻿using System.Net;
+using System.Threading.Tasks;
+using TempMail.API.Exceptions;
 
 namespace TempMail.API
 {
     public class Change
     {
-        private readonly Client sessionClient;
+        private readonly Client client;
 
-        public Change(Client session)
+        public Change(Client client)
         {
-            sessionClient = session;
+            this.client = client;
         }
 
+
         /// <summary>
-        /// Changes the temporary email to ex: login@domain .
+        /// Changes the temporary email to ex: login@domain
         /// </summary>
         /// <param name="login">New temporary email login</param>
         /// <param name="domain">New temporary email domain</param>
         public string ChangeEmail(string login, string domain)
         {
-            if (!sessionClient.AvailableDomains.Contains(domain))
-                throw new Exception("The domain you entered isn't an available domain");
+            if (!client.AvailableDomains.Contains(domain))
+                throw new InvalidDomainException(domain);
 
-            var csrf = sessionClient.GetCsrfCookie();
+            var csrf = client.GetCsrfCookie();
             var data = BuildUploadString(csrf.Value, login, domain);
 
-            var response = sessionClient.POST(Client.CHANGE_URL, data, MakeUploadHeaders());
+            var response = client.Post(Client.CHANGE_URL, data, MakeUploadHeaders());
+
+            if (response.StatusCode != HttpStatusCode.OK)
+                return null;
+
+            return $"{login}{NormalizeDomain(domain)}";
+        }
+
+        /// <summary>
+        /// Changes the temporary email to ex: login@domain async
+        /// </summary>
+        /// <param name="login">New temporary email login</param>
+        /// <param name="domain">New temporary email domain</param>
+        public async Task<string> ChangeEmailAsync(string login, string domain)
+        {
+            if (!client.AvailableDomains.Contains(domain))
+                throw new InvalidDomainException(domain);
+
+            var csrf = client.GetCsrfCookie();
+            var data = BuildUploadString(csrf.Value, login, domain);
+
+            var response = await client.PostAsync(Client.CHANGE_URL, data, MakeUploadHeaders());
 
             if (response.StatusCode != HttpStatusCode.OK)
                 return null;
@@ -54,7 +75,6 @@ namespace TempMail.API
         {
             return (domain[0] == '@') ? domain : '@' + domain;
         }
-
 
 
     }

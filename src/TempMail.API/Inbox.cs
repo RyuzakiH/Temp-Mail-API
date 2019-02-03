@@ -1,21 +1,22 @@
 ﻿using HtmlAgilityPack;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using TempMail.API.Extensions;
 
 namespace TempMail.API
 {
     public class Inbox
     {
-        private readonly Client sessionClient;
+        private readonly Client client;
 
         private HtmlDocument _document;
 
         public List<Mail> Mails;
 
-        public Inbox(Client session)
+        public Inbox(Client client)
         {
-            sessionClient = session;
+            this.client = client;
             _document = new HtmlDocument();
             Mails = new List<Mail>();
         }
@@ -23,9 +24,18 @@ namespace TempMail.API
 
         public IEnumerable<Mail> Refresh()
         {
-            _document = sessionClient.GetHtmlDocument(Client.CHECK_URL);
+            _document = client.GetHtmlDocument(Client.CHECK_URL);
 
             Mails.AddRange(GetNewMails(ExtractSimpleMails()));
+
+            return Mails;
+        }
+
+        public async Task<IEnumerable<Mail>> RefreshAsync()
+        {
+            _document = await client.GetHtmlDocumentAsync(Client.CHECK_URL);
+
+            Mails.AddRange(await Task.Run(() => GetNewMails(ExtractSimpleMails())));
 
             return Mails;
         }
@@ -55,7 +65,7 @@ namespace TempMail.API
         private IEnumerable<Mail> GetNewMails(IEnumerable<Mail> mails)
         {
             return mails.Where(mail => Mails.Count(m => m.Id == mail.Id) == 0)
-                .Select(mail => Mail.FromId(sessionClient, mail.Id)).ToList();
+                .Select(mail => Mail.FromId(client, mail.Id)).ToList();
         }
 
     }

@@ -33,7 +33,7 @@ namespace TempMail.API
         {
             var sourceUrl = $"https://temp-mail.org/en/source/{id}";
 
-            var raw_mail = session.GET(sourceUrl).Result;
+            var raw_mail = session.Get(sourceUrl).Result;
 
             return GetMailFromRaw(raw_mail, id);
         }
@@ -44,7 +44,7 @@ namespace TempMail.API
 
             var sourceUrl = string.Format("https://temp-mail.org/en/source/{0}", id);
 
-            var raw_mail = session.GET(sourceUrl).Result;
+            var raw_mail = session.Get(sourceUrl).Result;
 
             return GetMailFromRaw(raw_mail, id);
         }

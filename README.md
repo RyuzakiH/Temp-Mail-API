@@ -29,6 +29,9 @@ var email = client.Email;
 
 Full Test Example [Here](https://github.com/RyuzakiH/Temp-Mail-API/blob/master/src/TempMail.Example/Program.cs)
 
+# Supported Platforms
+[.NET Standard 2.0](https://github.com/dotnet/standard/blob/master/docs/versions.md)
+
 # Dependencies
 * [HtmlAgilityPack](https://www.nuget.org/packages/HtmlAgilityPack)
 * [MimeKit](https://www.nuget.org/packages/MimeKit)

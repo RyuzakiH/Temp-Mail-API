@@ -1,4 +1,5 @@
 Temp-Mail-API
+[![AppVeyor](https://img.shields.io/appveyor/ci/RyuzakiH/Temp-Mail-API/master.svg?maxAge=60)](https://ci.appveyor.com/project/RyuzakiH/Temp-Mail-API)
 [![NuGet](https://img.shields.io/nuget/v/TempMail.API.svg?maxAge=60)](https://www.nuget.org/packages/TempMail.API)
 ===============
 

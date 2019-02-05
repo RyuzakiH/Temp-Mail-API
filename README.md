@@ -7,7 +7,7 @@ Unofficial API for [TempMail](https://temp-mail.org) in .NET
 
 It can be used to generate temporary emails, it can help in making bots or anything else.
 
-NuGet: https://www.nuget.org/packages/TempMail.API
+**NuGet**: https://www.nuget.org/packages/TempMail.API
 
 
 # Usage

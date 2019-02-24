@@ -1,4 +1,5 @@
 Temp-Mail-API
+[![AppVeyor](https://img.shields.io/appveyor/ci/RyuzakiH/Temp-Mail-API/master.svg?maxAge=60)](https://ci.appveyor.com/project/RyuzakiH/Temp-Mail-API)
 [![NuGet](https://img.shields.io/nuget/v/TempMail.API.svg?maxAge=60)](https://www.nuget.org/packages/TempMail.API)
 ===============
 
@@ -6,7 +7,7 @@ Unofficial API for [TempMail](https://temp-mail.org) in .NET
 
 It can be used to generate temporary emails, it can help in making bots or anything else.
 
-NuGet: https://www.nuget.org/packages/TempMail.API
+**NuGet**: https://www.nuget.org/packages/TempMail.API
 
 
 # Usage

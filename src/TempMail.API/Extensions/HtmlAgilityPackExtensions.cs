@@ -27,5 +27,25 @@ namespace TempMail.API.Extensions
             return node.Descendants().Where(n => n.GetAttributeValue("class", "").Split(' ').Contains(className));
         }
 
+        public static IEnumerable<HtmlNode> GetElementsByName(this HtmlNode node, string tagName, string name)
+        {
+            return node.Descendants(tagName).Where(n => n.GetAttributeValue("name", "") == name);
+        }
+
+        public static IEnumerable<HtmlNode> GetElementsByName(this HtmlDocument document, string tagName, string name)
+        {
+            return document.DocumentNode.Descendants(tagName).Where(n => n.GetAttributeValue("name", "") == name);
+        }
+
+        public static IEnumerable<HtmlNode> GetElementsByName(this HtmlNode node, string name)
+        {
+            return node.Descendants().Where(n => n.GetAttributeValue("name", "") == name);
+        }
+
+        public static IEnumerable<HtmlNode> GetElementsByName(this HtmlDocument document, string name)
+        {
+            return document.DocumentNode.Descendants().Where(n => n.GetAttributeValue("name", "") == name);
+        }
+
     }
 }

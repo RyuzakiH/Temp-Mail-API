@@ -1,13 +1,11 @@
 using HtmlAgilityPack;
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
-using TempMail.API.Models;
-using TempMail.API.Utilities;
 
 namespace TempMail.API
 {
@@ -15,10 +13,11 @@ namespace TempMail.API
     {
         public const string BASE_URL = "https://temp-mail.org";
         public const string MAIN_PAGE_URL = "https://temp-mail.org/en/";
-        public const string CHANGE_URL = "https://temp-mail.org/en/option/change";
-        public const string CHECK_URL = "https://temp-mail.org/en/option/check";
-        public const string DELETE_URL = "https://temp-mail.org/en/option/delete";
+        public const string CHANGE_URL = "https://temp-mail.org/en/option/change/";
+        public const string CHECK_URL = "https://temp-mail.org/en/option/check/";
+        public const string DELETE_URL = "https://temp-mail.org/en/option/delete/";
 
+        private static readonly Encoding encoding = Encoding.UTF8;
 
         private CookieContainer cookies;
 
@@ -26,50 +25,68 @@ namespace TempMail.API
         public List<string> AvailableDomains => availableDomains ?? (availableDomains = GetAvailableDomains());
 
 
-        private Change ChangePage;
+        private Change change;
 
         public Inbox Inbox;
 
         public string Email { get; set; }
 
+        public HttpClient HttpClient { get; private set; }
 
-
+#if NETSTANDARD1_3
         public Client()
         {
-            cookies = new CookieContainer();
-
             Inbox = new Inbox(this);
 
-            ChangePage = new Change(this);
+            change = new Change(this);
         }
+#endif
+
+#if NETSTANDARD2_0
+
+        public WebProxy Proxy { get; set; }
+
+        public Client(WebProxy proxy = null)
+        {
+            Inbox = new Inbox(this);
+
+            change = new Change(this);
+
+            Proxy = proxy;
+        }
+#endif
+
 
         /// <summary>
-        /// Starts a new client session and get a new temporary email
+        /// Starts a new client session and get a new temporary email.
         /// </summary>
         public void StartNewSession()
         {
-            var document = GetHtmlDocument(MAIN_PAGE_URL);
+            CreateHttpClient();
+
+            var document = HttpClient.GetHtmlDocument(MAIN_PAGE_URL);
 
             Email = ExtractEmail(document);
         }
 
         /// <summary>
-        /// Starts a new client session and get a new temporary email
+        /// Starts a new client session and get a new temporary email.
         /// </summary>
         public async Task StartNewSessionAsync()
         {
-            var document = await GetHtmlDocumentAsync(MAIN_PAGE_URL);
+            await Task.Run(() => CreateHttpClient());
+
+            var document = await HttpClient.GetHtmlDocumentAsync(MAIN_PAGE_URL);
 
             Email = await Task.Run(() => ExtractEmail(document));
         }
 
         private string ExtractEmail(HtmlDocument document)
         {
-            return document.GetElementbyId("mail").GetAttributeValue("value", null);
+            return document.GetElementbyId("mail")?.GetAttributeValue("value", null);
         }
-
-
-
+        
+        
         /// <summary>
         /// Changes the temporary email to ex: login@domain
         /// </summary>
@@ -77,7 +94,11 @@ namespace TempMail.API
         /// <param name="domain">New temporary email domain</param>
         public string Change(string login, string domain)
         {
-            return (Email = ChangePage.ChangeEmail(login, domain));
+            Email = change.ChangeEmail(login, domain);
+
+            Inbox.Clear();
+
+            return Email;
         }
 
         /// <summary>
@@ -87,7 +108,11 @@ namespace TempMail.API
         /// <param name="domain">New temporary email domain</param>
         public async Task<string> ChangeAsync(string login, string domain)
         {
-            return (Email = await ChangePage.ChangeEmailAsync(login, domain));
+            Email = await change.ChangeEmailAsync(login, domain);
+
+            Inbox.Clear();
+
+            return Email;
         }
 
 
@@ -96,14 +121,23 @@ namespace TempMail.API
         /// </summary>
         public bool Delete()
         {
-            var response = Get(DELETE_URL);
-
+            HttpResponseMessage response;
+            using (var requestMessage = new HttpRequestMessage(HttpMethod.Get, DELETE_URL))
+            {
+                requestMessage.Headers.Add("Accept", "application/json, text/javascript, */*; q=0.01");
+                requestMessage.Headers.Referrer = new Uri(BASE_URL);
+                requestMessage.Headers.Add("X-Requested-With", "XMLHttpRequest");
+                response = HttpClient.Send(requestMessage);
+            }
+            
             if (response.StatusCode != HttpStatusCode.OK)
                 return false;
 
-            Email = (JsonConvert.DeserializeObject<Dictionary<string, object>>(response.Result))?["mail"].ToString();
+            Email = response.Content.ReadAsJsonObject<Dictionary<string, object>>(encoding)?["mail"].ToString();
 
             UpdateEmailCookie();
+
+            Inbox.Clear();
 
             return true;
         }
@@ -113,14 +147,23 @@ namespace TempMail.API
         /// </summary>
         public async Task<bool> DeleteAsync()
         {
-            var response = await GetAsync(DELETE_URL);
+            HttpResponseMessage response;
+            using (var requestMessage = new HttpRequestMessage(HttpMethod.Get, DELETE_URL))
+            {
+                requestMessage.Headers.Add("Accept", "application/json, text/javascript, */*; q=0.01");
+                requestMessage.Headers.Referrer = new Uri(BASE_URL);
+                requestMessage.Headers.Add("X-Requested-With", "XMLHttpRequest");
+                response = await HttpClient.SendAsync(requestMessage);
+            }
 
             if (response.StatusCode != HttpStatusCode.OK)
                 return false;
 
-            Email = (await Task.Run(() => JsonConvert.DeserializeObject<Dictionary<string, object>>(response.Result)))?["mail"].ToString();
+            Email = (await Task.Run(() => response.Content.ReadAsJsonObject<Dictionary<string, object>>(encoding)))?["mail"].ToString();
 
             await Task.Run(() => UpdateEmailCookie());
+
+            Inbox.Clear();
 
             return true;
         }
@@ -128,9 +171,7 @@ namespace TempMail.API
 
         private List<string> GetAvailableDomains()
         {
-            var document = GetHtmlDocument(CHANGE_URL);
-
-            return document.GetElementbyId("domain").Descendants("option")
+            return HttpClient.GetHtmlDocument(CHANGE_URL).GetElementbyId("domain").Descendants("option")
                 .Select(s => s.GetAttributeValue("value", null)).ToList();
         }
 
@@ -145,141 +186,37 @@ namespace TempMail.API
         }
 
 
-
-        /// <summary>
-        /// Sends a get request to the Url provided using this session cookies.
-        /// </summary>
-        /// <returns> Response object containing the status code and the result of the response </returns>
-        public Response Get(string url)
+        private void CreateHttpClient()
         {
-            using (var client = CreateHttpClient())
+            cookies = new CookieContainer();
+
+            var handler = new HttpClientHandler
             {
-                return new Response { StatusCode = client.StatusCode, Result = client.DownloadString(url) };
-            }
-        }
-
-        /// <summary>
-        /// Sends a get request to the Url provided using this session cookies.
-        /// </summary>
-        /// <returns> Response object containing the status code and the result of the response </returns>
-        public async Task<Response> GetAsync(string url)
-        {
-            using (var client = CreateHttpClient())
-            {
-                return new Response { StatusCode = client.StatusCode, Result = await client.DownloadStringTaskAsync(url) };
-            }
-        }
-
-        /// <summary>
-        /// Sends a get request to the Url provided using this session cookies and returns the HtmlDocument of the result.
-        /// </summary>
-        public HtmlDocument GetHtmlDocument(string url)
-        {
-            using (var client = CreateHttpClient())
-            {
-                var response = client.DownloadString(url);
-
-                var document = new HtmlDocument();
-                document.LoadHtml(response);
-
-                return document;
-            }
-        }
-
-        /// <summary>
-        /// Sends a get request to the Url provided using this session cookies.
-        /// </summary>
-        /// <returns> HtmlDocument of the result </returns>
-        public async Task<HtmlDocument> GetHtmlDocumentAsync(string url)
-        {
-            using (var client = CreateHttpClient())
-            {
-                var response = await client.DownloadStringTaskAsync(url);
-
-                var document = new HtmlDocument();
-                await Task.Run(() => document.LoadHtml(response));
-
-                return document;
-            }
-        }
-
-        /// <summary>
-        /// Sends a post request to the Url provided using this session cookies and returns the string result.
-        /// </summary>
-        public string Post(string url, string data)
-        {
-            using (var client = CreateHttpClient())
-            {
-                return client.UploadString(url, data);
-            }
-        }
-
-        /// <summary>
-        /// Sends a post request to the Url provided using this session cookies.
-        /// </summary>
-        /// <returns> string result </returns>
-        public async Task<string> PostAsync(string url, string data)
-        {
-            using (var client = CreateHttpClient())
-            {
-                return await client.UploadStringTaskAsync(url, data);
-            }
-        }
-
-        /// <summary>
-        /// Sends a post request to the Url provided using this session cookies and provided headers.
-        /// </summary>
-        /// <returns> Response object containing the status code and the result of the response </returns>
-        public Response Post(string url, string data, WebHeaderCollection headers)
-        {
-            using (var client = CreateHttpClient())
-            {
-                foreach (string header in headers)
-                    client.Headers.Set(header, headers[header]);
-
-                return new Response { StatusCode = client.StatusCode, Result = client.UploadString(url, data) };
-            }
-        }
-
-        /// <summary>
-        /// Sends a post request to the Url provided using this session cookies and provided headers.
-        /// </summary>
-        /// <returns> Response object containing the status code and the result of the response </returns>
-        public async Task<Response> PostAsync(string url, string data, WebHeaderCollection headers)
-        {
-            using (var client = CreateHttpClient())
-            {
-                await Task.Run(() =>
-                {
-                    foreach (string header in headers)
-                        client.Headers.Set(header, headers[header]);
-                });
-
-                return new Response { StatusCode = client.StatusCode, Result = await client.UploadStringTaskAsync(url, data) };
-            }
-        }
-
-        /// <summary>
-        /// Returns an HttpClient that have this session cookies.
-        /// </summary>
-        private HttpClient CreateHttpClient()
-        {
-            return new HttpClient()
-            {
-                DefaultHeaders = new WebHeaderCollection()
-                {
-                    { "Accept", "*/*" },
-                    { "Accept-Encoding", "gzip, deflate" },
-                    { "Accept-Language", "en-US,en" },
-                    { "User-Agent", "Mozilla/5.0 (Windows NT 6.3; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.87 Safari/537.36" },
-                    { "Host", "temp-mail.org" },
-                    { "Origin", "https://temp-mail.org"},
-                    { "X-Requested-With", "XMLHttpRequest"},
-                    { "Upgrade-Insecure-Requests", "1"}
-                },
-                Encoding = Encoding.UTF8,
-                CookieContainer = cookies
+                UseCookies = true,
+                CookieContainer = cookies,
+                AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate,
+                //AllowAutoRedirect = true
             };
+
+#if NETSTANDARD2_0
+            if (Proxy != null)
+            {
+                handler.UseProxy = true;
+                handler.Proxy = Proxy;
+            }
+#endif
+
+            HttpClient = new HttpClient(handler);
+
+            HttpClient.DefaultRequestHeaders.Add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8");
+            //HttpClient.DefaultRequestHeaders.Add("Accept-Encoding", "gzip, deflate");
+            HttpClient.DefaultRequestHeaders.Add("Accept-Language", "en-US,en");
+            HttpClient.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.109 Safari/537.36");
+            HttpClient.DefaultRequestHeaders.Add("Host", "temp-mail.org");
+            //HttpClient.DefaultRequestHeaders.Add("Origin", "https://temp-mail.org");
+            //HttpClient.DefaultRequestHeaders.Add("X-Requested-With", "XMLHttpRequest");
+            HttpClient.DefaultRequestHeaders.Add("Upgrade-Insecure-Requests", "1");
+            HttpClient.DefaultRequestHeaders.Add("Connection", "keep-alive");
         }
 
     }

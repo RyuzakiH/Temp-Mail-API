@@ -14,18 +14,25 @@ namespace TempMail.Example
         {
             // Here, we test the synchronous way and the asynchronous one (uncomment any)
 
-            //Test();
+            //var client = new Client(new WebProxy("163.172.220.221", 8888));
 
-            TestAsync().Wait();
+            //var client = new Client()
+            //{
+            //    Proxy = new WebProxy("163.172.220.221", 8888)
+            //};
+
+            Test();
+
+            //TestAsync().Wait();
         }
 
         private static void Test()
         {
             var client = new Client();
-
+            
             // To get a new temporary email
             client.StartNewSession();
-
+            
             // To get the available domains
             var availableDomains = client.AvailableDomains;
 
@@ -97,14 +104,14 @@ namespace TempMail.Example
             Console.WriteLine($"Inbox:");
 
             Console.WriteLine(string.Join('\n',
-                client.Inbox.Mails.Select(mail => 
+                client.Inbox.Mails.Select(mail =>
                 $"\tSender: {mail.From.FirstOrDefault().Name}\n\tSubject: {mail.Subject}\n\tBody: {mail.TextBody}")));
         }
 
         private static void SendFakeMails(int count, string temp_email, int delay = 1000)
         {
-            var from = new MailAddress("from@gmail.com", "Ryuzaki"); // Edit this
-            
+            var from = new MailAddress("login@gmail.com", "Ryuzaki"); // Edit this
+
             var to = new MailAddress(temp_email, "TempMail Name");
 
             for (int i = 0; i < count; i++)

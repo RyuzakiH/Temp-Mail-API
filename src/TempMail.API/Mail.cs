@@ -1,6 +1,9 @@
 using MimeKit;
+using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Net.Http;
 using System.Text;
 using System.Text.RegularExpressions;
 using TempMail.API.Extensions;
@@ -33,7 +36,7 @@ namespace TempMail.API
         {
             var sourceUrl = $"https://temp-mail.org/en/source/{id}";
 
-            var raw_mail = session.Get(sourceUrl).Result;
+            var raw_mail = session.HttpClient.GetString(sourceUrl);
 
             return GetMailFromRaw(raw_mail, id);
         }
@@ -42,9 +45,9 @@ namespace TempMail.API
         {
             var id = ExtractId(link);
 
-            var sourceUrl = string.Format("https://temp-mail.org/en/source/{0}", id);
+            var sourceUrl = $"https://temp-mail.org/en/source/{id}";
 
-            var raw_mail = session.Get(sourceUrl).Result;
+            var raw_mail = session.HttpClient.GetString(sourceUrl);
 
             return GetMailFromRaw(raw_mail, id);
         }
@@ -53,7 +56,7 @@ namespace TempMail.API
         {
             var mail = Parse(raw_mail);
             mail.Id = id;
-
+            
             return mail;
         }
 
@@ -72,24 +75,61 @@ namespace TempMail.API
 
         private static Mail ConvertMessageToMail(MimeMessage message)
         {
-            return (Mail)message.CastTo(typeof(Mail));
+            var mail = new Mail
+            {
+                Attachments = message.Attachments.Cast<MimePart>(),
+                Bcc = message.Bcc,
+                Body = message.Body,
+                BodyParts = message.BodyParts,
+                Cc = message.Cc,
+                Date = message.Date,
+                From = message.From,
+                Headers = message.Headers,
+                HtmlBody = message.HtmlBody,
+                Importance = message.Importance,
+                InReplyTo = message.InReplyTo,
+                MessageId = message.MessageId,
+                MimeVersion = message.MimeVersion,
+                Priority = message.Priority,
+                //References = message.References,
+                ReplyTo = message.ReplyTo,
+                ResentBcc = message.ResentBcc,
+                ResentCc = message.ResentCc,
+                ResentDate = message.ResentDate,
+                ResentFrom = message.ResentFrom,
+                //ResentMessageId = message.ResentMessageId,
+                ResentReplyTo = message.ResentReplyTo,
+                ResentSender = message.ResentSender,
+                ResentTo = message.ResentTo,
+                Sender = message.Sender,
+                Subject = message.Subject,
+                TextBody = message.TextBody,
+                To = message.To,
+                XPriority = message.XPriority
+            };
+            
+            if (message.ResentMessageId != null)
+                mail.ResentMessageId = message.ResentMessageId;
+
+            mail.References.AddRange(message.References);
+            
+            return mail;
+            //return (Mail)message.CastTo(typeof(Mail));
+        }
+        
+        public static string ExtractId(string link)
+        {
+            return Regex.Match(link, @"https://temp-mail.org/en/.*?/(?<id>.*)").Groups["id"].Value;
         }
 
-
-        public void SaveAttachment(MimePart attachment, string directory = "", string tempFileName = null)
+        public void SaveAttachment(MimePart attachment, string directory = "", string altFileName = null)
         {
-            var fileName = attachment.FileName ?? tempFileName;
+            var fileName = attachment.FileName ?? altFileName ?? $"file{ new Random().Next(10000) }";
 
             using (var stream = File.Create(Path.Combine(directory, fileName)))
             {
                 attachment.Content.DecodeTo(stream);
             }
-        }
-
-
-        public static string ExtractId(string link)
-        {
-            return Regex.Match(link, @"https://temp-mail.org/en/.*?/(?<id>.*)").Groups["id"].Value;
         }
 
     }

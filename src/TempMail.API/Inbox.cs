@@ -1,6 +1,9 @@
 ﻿using HtmlAgilityPack;
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
+using System.Text;
 using System.Threading.Tasks;
 using TempMail.API.Extensions;
 
@@ -12,7 +15,7 @@ namespace TempMail.API
 
         private HtmlDocument _document;
 
-        public List<Mail> Mails;
+        public List<Mail> Mails { get; }
 
         public Inbox(Client client)
         {
@@ -24,7 +27,15 @@ namespace TempMail.API
 
         public IEnumerable<Mail> Refresh()
         {
-            _document = client.GetHtmlDocument(Client.CHECK_URL);
+            HttpResponseMessage response;
+            using (var requestMessage = new HttpRequestMessage(HttpMethod.Get, Client.CHECK_URL))
+            {
+                requestMessage.Headers.Referrer = new Uri(Client.BASE_URL);
+                requestMessage.Headers.Add("X-Requested-With", "XMLHttpRequest");
+                response = client.HttpClient.Send(requestMessage);
+            }
+
+            _document = response.Content.ReadAsHtmlDocument(Encoding.UTF8);
 
             Mails.AddRange(GetNewMails(ExtractSimpleMails()));
 
@@ -33,11 +44,26 @@ namespace TempMail.API
 
         public async Task<IEnumerable<Mail>> RefreshAsync()
         {
-            _document = await client.GetHtmlDocumentAsync(Client.CHECK_URL);
+            HttpResponseMessage response;
+            using (var requestMessage = new HttpRequestMessage(HttpMethod.Get, Client.CHECK_URL))
+            {
+                requestMessage.Headers.Referrer = new Uri(Client.BASE_URL);
+                requestMessage.Headers.Add("X-Requested-With", "XMLHttpRequest");
+                response = await client.HttpClient.SendAsync(requestMessage);
+            }
+
+            _document = await response.Content.ReadAsHtmlDocumentAsync(Encoding.UTF8);
 
             Mails.AddRange(await Task.Run(() => GetNewMails(ExtractSimpleMails())));
 
             return Mails;
+        }
+
+
+        public void Clear()
+        {
+            Mails.Clear();
+            _document = new HtmlDocument();
         }
 
 

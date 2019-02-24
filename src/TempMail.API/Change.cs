@@ -1,4 +1,7 @@
-﻿using System.Net;
+﻿using System;
+using System.Collections.Generic;
+using System.Net;
+using System.Net.Http;
 using System.Threading.Tasks;
 using TempMail.API.Exceptions;
 
@@ -13,7 +16,6 @@ namespace TempMail.API
             this.client = client;
         }
 
-
         /// <summary>
         /// Changes the temporary email to ex: login@domain
         /// </summary>
@@ -25,9 +27,9 @@ namespace TempMail.API
                 throw new InvalidDomainException(domain);
 
             var csrf = client.GetCsrfCookie();
-            var data = BuildUploadString(csrf.Value, login, domain);
+            var data = BuildPostData(csrf.Value, login, domain);
 
-            var response = client.Post(Client.CHANGE_URL, data, MakeUploadHeaders());
+            var response = SendRequest(data);
 
             if (response.StatusCode != HttpStatusCode.OK)
                 return null;
@@ -46,29 +48,46 @@ namespace TempMail.API
                 throw new InvalidDomainException(domain);
 
             var csrf = client.GetCsrfCookie();
-            var data = BuildUploadString(csrf.Value, login, domain);
+            var data = BuildPostData(csrf.Value, login, domain);
 
-            var response = await client.PostAsync(Client.CHANGE_URL, data, MakeUploadHeaders());
+            var response = await SendRequestAsync(data);
 
             if (response.StatusCode != HttpStatusCode.OK)
                 return null;
 
             return $"{login}{NormalizeDomain(domain)}";
         }
+        
 
-
-        private WebHeaderCollection MakeUploadHeaders()
+        private Dictionary<string,string> BuildPostData(string csrf, string login, string domain)
         {
-            return new WebHeaderCollection
+            return new Dictionary<string, string>
             {
-                { "Referer", Client.CHANGE_URL },
-                { "Content-Type", "application/x-www-form-urlencoded" }
+                { "csrf", csrf },
+                { "mail", login },
+                { "domain", NormalizeDomain(domain) },
             };
         }
 
-        private string BuildUploadString(string csrf, string login, string domain)
+        private HttpResponseMessage SendRequest(Dictionary<string, string> data)
         {
-            return $"csrf={csrf}&mail={login}&domain={ NormalizeDomain(domain) }";
+            using (var requestMessage = new HttpRequestMessage(HttpMethod.Post, Client.CHANGE_URL))
+            {
+                requestMessage.Content = new FormUrlEncodedContent(data);
+                requestMessage.Headers.Referrer = new Uri(Client.CHANGE_URL);
+                return client.HttpClient.Send(requestMessage);
+            }
+        }
+
+        private async Task<HttpResponseMessage> SendRequestAsync(Dictionary<string, string> data)
+        {
+            using (var requestMessage = new HttpRequestMessage(HttpMethod.Post, Client.CHANGE_URL))
+            {
+                requestMessage.Content = new FormUrlEncodedContent(data);
+                requestMessage.Headers.Referrer = new Uri(Client.CHANGE_URL);
+                requestMessage.Headers.Add("Origin", "https://temp-mail.org");
+                return await client.HttpClient.SendAsync(requestMessage);
+            }
         }
 
         private static string NormalizeDomain(string domain)

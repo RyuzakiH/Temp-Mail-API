@@ -64,16 +64,16 @@ var email = client.Email;
 
 ```
 
-To use a Proxy, .NET Standard 2 version needed
+To use a Proxy
 ```csharp
 var client = new Client(new WebProxy("163.172.220.221", 8888));
-```
-or
-```csharp
+
+// or
 var client = new Client()
 {
     Proxy = new WebProxy("163.172.220.221", 8888)
 };
+
 ```
 
 Full Test Example [Here](https://github.com/RyuzakiH/Temp-Mail-API/blob/master/src/TempMail.Example/Program.cs)

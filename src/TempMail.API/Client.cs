@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -33,20 +34,9 @@ namespace TempMail.API
 
         public HttpClient HttpClient { get; private set; }
 
-#if NETSTANDARD1_3
-        public Client()
-        {
-            Inbox = new Inbox(this);
+        public IWebProxy Proxy { get; set; }
 
-            change = new Change(this);
-        }
-#endif
-
-#if NETSTANDARD2_0
-
-        public WebProxy Proxy { get; set; }
-
-        public Client(WebProxy proxy = null)
+        public Client([Optional]IWebProxy proxy)
         {
             Inbox = new Inbox(this);
 
@@ -54,8 +44,6 @@ namespace TempMail.API
 
             Proxy = proxy;
         }
-#endif
-
 
         /// <summary>
         /// Starts a new client session and get a new temporary email.
@@ -195,16 +183,9 @@ namespace TempMail.API
                 UseCookies = true,
                 CookieContainer = cookies,
                 AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate,
+                Proxy = Proxy
                 //AllowAutoRedirect = true
             };
-
-#if NETSTANDARD2_0
-            if (Proxy != null)
-            {
-                handler.UseProxy = true;
-                handler.Proxy = Proxy;
-            }
-#endif
 
             HttpClient = new HttpClient(handler);
 

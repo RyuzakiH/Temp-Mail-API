@@ -1,3 +1,4 @@
+using Cloudflare;
 using HtmlAgilityPack;
 using System;
 using System.Collections.Generic;
@@ -19,6 +20,8 @@ namespace TempMail.API
         public const string DELETE_URL = "https://temp-mail.org/en/option/delete/";
 
         private static readonly Encoding encoding = Encoding.UTF8;
+
+        private HttpClientHandler handler;
 
         private CookieContainer cookies;
 
@@ -52,6 +55,8 @@ namespace TempMail.API
         {
             CreateHttpClient();
 
+            BybassCloudflare();
+
             var document = HttpClient.GetHtmlDocument(MAIN_PAGE_URL);
 
             Email = ExtractEmail(document);
@@ -64,9 +69,35 @@ namespace TempMail.API
         {
             await Task.Run(() => CreateHttpClient());
 
+            await BybassCloudflareAsync();
+
             var document = await HttpClient.GetHtmlDocumentAsync(MAIN_PAGE_URL);
 
             Email = await Task.Run(() => ExtractEmail(document));
+        }
+
+        private bool BybassCloudflare(int tries = 2)
+        {
+            var cloudflare = new CloudflareSolver();
+
+            var result = cloudflare.Solve(HttpClient, handler, new Uri(BASE_URL)).Result;
+
+            for (; tries > 0; tries--)
+                result = cloudflare.Solve(HttpClient, handler, new Uri(BASE_URL)).Result;
+            
+            return result.Success;
+        }
+
+        private async Task<bool> BybassCloudflareAsync(int tries = 2)
+        {
+            var cloudflare = new CloudflareSolver();
+
+            var result = await cloudflare.Solve(HttpClient, handler, new Uri(BASE_URL));
+
+            for (; tries > 0; tries--)
+                result = await cloudflare.Solve(HttpClient, handler, new Uri(BASE_URL));
+            
+            return result.Success;
         }
 
         private string ExtractEmail(HtmlDocument document)
@@ -178,7 +209,7 @@ namespace TempMail.API
         {
             cookies = new CookieContainer();
 
-            var handler = new HttpClientHandler
+            handler = new HttpClientHandler
             {
                 UseCookies = true,
                 CookieContainer = cookies,

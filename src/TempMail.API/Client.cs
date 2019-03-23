@@ -1,3 +1,4 @@
+using _2Captcha;
 using Cloudflare;
 using HtmlAgilityPack;
 using System;
@@ -20,7 +21,6 @@ namespace TempMail.API
         public const string DELETE_URL = "https://temp-mail.org/en/option/delete/";
 
         private static readonly Encoding encoding = Encoding.UTF8;
-
         private HttpClientHandler handler;
 
         private CookieContainer cookies;
@@ -28,6 +28,7 @@ namespace TempMail.API
         private List<string> availableDomains;
         public List<string> AvailableDomains => availableDomains ?? (availableDomains = GetAvailableDomains());
 
+        private readonly string _2CaptchaKey;
 
         private Change change;
 
@@ -39,13 +40,15 @@ namespace TempMail.API
 
         public IWebProxy Proxy { get; set; }
 
-        public Client([Optional]IWebProxy proxy)
+        public Client([Optional]string _2CaptchaKey, [Optional]IWebProxy proxy)
         {
             Inbox = new Inbox(this);
 
             change = new Change(this);
 
             Proxy = proxy;
+
+            this._2CaptchaKey = _2CaptchaKey;
         }
 
         /// <summary>
@@ -55,7 +58,10 @@ namespace TempMail.API
         {
             CreateHttpClient();
 
-            BybassCloudflare();
+            var solveResult = BybassCloudflare();
+
+            if (!solveResult.Success)
+                throw new CloudflareException(solveResult.FailReason);
 
             var document = HttpClient.GetHtmlDocument(MAIN_PAGE_URL);
 
@@ -69,43 +75,46 @@ namespace TempMail.API
         {
             await Task.Run(() => CreateHttpClient());
 
-            await BybassCloudflareAsync();
+            var solveResult = await BybassCloudflareAsync();
+
+            if (!solveResult.Success)
+                throw new CloudflareException(solveResult.FailReason);
 
             var document = await HttpClient.GetHtmlDocumentAsync(MAIN_PAGE_URL);
 
             Email = await Task.Run(() => ExtractEmail(document));
         }
 
-        private bool BybassCloudflare(int tries = 2)
+        private CloudflareSolveResult BybassCloudflare(int tries = 2)
         {
-            var cloudflare = new CloudflareSolver();
+            var cloudflare = new CloudflareSolver(_2CaptchaKey);
 
             var result = cloudflare.Solve(HttpClient, handler, new Uri(BASE_URL)).Result;
 
             for (; tries > 0; tries--)
                 result = cloudflare.Solve(HttpClient, handler, new Uri(BASE_URL)).Result;
-            
-            return result.Success;
+
+            return result;
         }
 
-        private async Task<bool> BybassCloudflareAsync(int tries = 2)
+        private async Task<CloudflareSolveResult> BybassCloudflareAsync(int tries = 2)
         {
-            var cloudflare = new CloudflareSolver();
+            var cloudflare = new CloudflareSolver(_2CaptchaKey);
 
             var result = await cloudflare.Solve(HttpClient, handler, new Uri(BASE_URL));
 
             for (; tries > 0; tries--)
                 result = await cloudflare.Solve(HttpClient, handler, new Uri(BASE_URL));
-            
-            return result.Success;
+
+            return result;
         }
 
         private string ExtractEmail(HtmlDocument document)
         {
             return document.GetElementbyId("mail")?.GetAttributeValue("value", null);
         }
-        
-        
+
+
         /// <summary>
         /// Changes the temporary email to ex: login@domain
         /// </summary>
@@ -148,7 +157,7 @@ namespace TempMail.API
                 requestMessage.Headers.Add("X-Requested-With", "XMLHttpRequest");
                 response = HttpClient.Send(requestMessage);
             }
-            
+
             if (response.StatusCode != HttpStatusCode.OK)
                 return false;
 

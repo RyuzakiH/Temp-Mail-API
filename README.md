@@ -64,16 +64,14 @@ var email = client.Email;
 
 ```
 
-To use a Proxy
+To use a Proxy, if your IP is banned by Cloudflare
 ```csharp
-var client = new Client(new WebProxy("163.172.220.221", 8888));
+var client = new Client(proxy: new WebProxy("163.172.220.221", 8888));
+```
 
-// or
-var client = new Client()
-{
-    Proxy = new WebProxy("163.172.220.221", 8888)
-};
-
+To add your 2captcha api key, if cloudflare challenge is a captcha
+``` charp
+var client = new Client(_2CaptchaKey: YOUR_2CAPTCHA_KEY);
 ```
 
 Full Test Example [Here](https://github.com/RyuzakiH/Temp-Mail-API/blob/master/src/TempMail.Example/Program.cs)

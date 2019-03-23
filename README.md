@@ -70,7 +70,7 @@ var client = new Client(proxy: new WebProxy("163.172.220.221", 8888));
 ```
 
 To add your 2captcha api key, if cloudflare challenge is a captcha
-``` charp
+```charp
 var client = new Client(_2CaptchaKey: YOUR_2CAPTCHA_KEY);
 ```
 

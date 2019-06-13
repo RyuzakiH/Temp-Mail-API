@@ -66,13 +66,8 @@ namespace TempMail.API
             _document = new HtmlDocument();
         }
 
-        public IEnumerable<Mail> ExtractSimpleMails()
-        {
-
-            IEnumerable<HtmlNode> x = _document.DocumentNode.Descendants("li");
-
-            return  x.Select(ExtractSimpleMail).ToList();
-        }
+        public IEnumerable<Mail> ExtractSimpleMails() =>
+            _document.DocumentNode.Descendants("li").Select(ExtractSimpleMail).ToList();
 
         private Mail ExtractSimpleMail(HtmlNode li)
         {
@@ -94,11 +89,9 @@ namespace TempMail.API
             };
         }
 
-        private IEnumerable<Mail> GetNewMails(IEnumerable<Mail> mails)
-        {
-            return mails.Where(mail => Mails.Count(m => m.Id == mail.Id) == 0)
+        private IEnumerable<Mail> GetNewMails(IEnumerable<Mail> mails) => 
+            mails.Where(mail => Mails.Count(m => m.Id == mail.Id) == 0)
                 .Select(mail => Mail.FromId(client, mail.Id)).ToList();
-        }
 
     }
 }

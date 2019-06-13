@@ -36,7 +36,25 @@ namespace TempMail.API
         {
             var sourceUrl = $"https://temp-mail.org/en/source/{id}";
 
-            var raw_mail = session.HttpClient.GetString(sourceUrl);
+            var raw_mail = "";
+
+            try
+            {
+                HttpClientHandler httpClientHandler = new HttpClientHandler();
+                httpClientHandler.AllowAutoRedirect = true;
+
+                using (HttpClient client = new HttpClient(httpClientHandler))
+                {
+                      client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36");
+
+                        raw_mail = client.GetString(sourceUrl);
+                }
+              
+            }
+            catch(Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
 
             return GetMailFromRaw(raw_mail, id);
         }

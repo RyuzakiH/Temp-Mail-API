@@ -66,24 +66,30 @@ namespace TempMail.API
             _document = new HtmlDocument();
         }
 
-
         public IEnumerable<Mail> ExtractSimpleMails()
         {
-            return _document.GetElementbyId("mails").Descendants("tbody")
-                .FirstOrDefault()?.Descendants("tr").Select(ExtractSimpleMail).ToList();
+
+            IEnumerable<HtmlNode> x = _document.DocumentNode.Descendants("li");
+
+            return  x.Select(ExtractSimpleMail).ToList();
         }
 
-        private Mail ExtractSimpleMail(HtmlNode tr)
+        private Mail ExtractSimpleMail(HtmlNode li)
         {
-            var a = tr.Descendants("td").FirstOrDefault()?.FirstChild;
+            var sender = li.Descendants("span").Where(d =>   d.Attributes["class"].Value.Equals("inboxSenderName")).FirstOrDefault().InnerText;
+
+            var span = li.Descendants("span").Where(d =>   d.Attributes["class"].Value.Equals("inboxSubject subject-title")).FirstOrDefault();
+
+            var a =  span.Descendants("a").FirstOrDefault();
 
             var link = a.GetAttributeValue("href", null);
+            var subject = a.GetAttributeValue("title", null);
 
             return new Mail()
             {
                 Id = Mail.ExtractId(link),
-                Subject = tr.GetElementsByClassName("title-subject").FirstOrDefault()?.InnerText,
-                StrSender = a?.InnerText,
+                Subject = subject,
+                StrSender = sender,
                 Link = link
             };
         }

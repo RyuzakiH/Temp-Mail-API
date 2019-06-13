@@ -5,7 +5,7 @@ Temp-Mail-API
 
 Unofficial API for [TempMail](https://temp-mail.org) in .NET
 
-It can be used to generate temporary emails, it can help in making bots or anything else.
+> Disposable email - is a service that allows to receive email at a temporary address that self-destructed after a certain time elapses. It is also known by names like : tempmail, 10minutemail, throwaway email, fake-mail or trash-mail. Many forums, Wi-Fi owners, websites and blogs ask visitors to register before they can view content, post comments or download something. Temp-Mail - is most advanced throwaway email service that helps you avoid spam and stay safe.
 
 **NuGet**: https://www.nuget.org/packages/TempMail.API
 

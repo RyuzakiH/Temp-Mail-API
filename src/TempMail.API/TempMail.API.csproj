@@ -9,7 +9,7 @@
     <RepositoryUrl></RepositoryUrl>
     <PackageProjectUrl>https://github.com/RyuzakiH/Temp-Mail-API</PackageProjectUrl>
     <PackageTags>api library tempmail temp-mail.org HTTP mail email wrapper</PackageTags>
-    <Version>1.1.4</Version>
+    <Version>1.1.5</Version>
   </PropertyGroup>
 
   <ItemGroup>

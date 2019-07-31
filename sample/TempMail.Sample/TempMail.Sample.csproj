@@ -3,10 +3,12 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp2.1</TargetFramework>
+    <AssemblyName>TempMail.Sample</AssemblyName>
+    <RootNamespace>TempMail.Sample</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\TempMail.API\TempMail.API.csproj" />
+    <ProjectReference Include="..\..\src\TempMail.API\TempMail.API.csproj" />
   </ItemGroup>
 
 </Project>

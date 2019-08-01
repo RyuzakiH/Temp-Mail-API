@@ -9,6 +9,7 @@ using System.Net.Http;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using TempMail.API.Constants;
+using TempMail.API.Utilities;
 
 namespace TempMail.API
 {
@@ -19,8 +20,6 @@ namespace TempMail.API
 
         private readonly ICaptchaProvider captchaProvider;
 
-        private Change change;
-
         public Inbox Inbox;
 
         public string Email { get; set; }
@@ -30,7 +29,6 @@ namespace TempMail.API
         public TempMailClient([Optional]ICaptchaProvider captchaProvider, [Optional]IWebProxy proxy)
         {
             Inbox = new Inbox(this);
-            change = new Change(this);
 
             this.captchaProvider = captchaProvider;
             this.proxy = proxy;
@@ -73,7 +71,23 @@ namespace TempMail.API
         /// <param name="domain">New temporary email domain</param>
         public string Change(string login, string domain)
         {
-            Email = change.ChangeEmail(login, domain);
+            if (!AvailableDomains.Contains(domain))
+                throw new Exception(string.Format("The domain you entered is not an available domain: {0}", domain));
+
+            var data = new Dictionary<string, string>
+            {
+                { "csrf", GetCookie("csrf").Value },
+                { "mail", login },
+                { "domain", Utils.NormalizeDomain(domain) },
+            };
+
+            var response = SendRequest(HttpMethod.Post, Urls.CHANGE_URL,
+                referrer: new Uri(Urls.CHANGE_URL), content: new FormUrlEncodedContent(data));
+
+            if (response.StatusCode != HttpStatusCode.OK)
+                return null;
+
+            Email = $"{login}{Utils.NormalizeDomain(domain)}";
 
             Inbox.Clear();
 
@@ -87,7 +101,23 @@ namespace TempMail.API
         /// <param name="domain">New temporary email domain</param>
         public async Task<string> ChangeAsync(string login, string domain)
         {
-            Email = await change.ChangeEmailAsync(login, domain);
+            if (!AvailableDomains.Contains(domain))
+                throw new Exception(string.Format("The domain you entered is not an available domain: {0}", domain));
+
+            var data = new Dictionary<string, string>
+            {
+                { "csrf", GetCookie("csrf").Value },
+                { "mail", login },
+                { "domain", Utils.NormalizeDomain(domain) },
+            };
+
+            var response = await SendRequestAsync(HttpMethod.Post, Urls.CHANGE_URL,
+                referrer: new Uri(Urls.CHANGE_URL), content: new FormUrlEncodedContent(data));
+
+            if (response.StatusCode != HttpStatusCode.OK)
+                return null;
+
+            Email = $"{login}{Utils.NormalizeDomain(domain)}";
 
             Inbox.Clear();
 

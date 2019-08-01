@@ -7,7 +7,7 @@ namespace TempMail.Sample
     {
         public static void Sample()
         {
-            var client = new Client();
+            var client = new TempMailClient();
 
             // To get a new temporary email
             client.StartNewSession();

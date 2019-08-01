@@ -32,7 +32,7 @@ namespace TempMail.API
         public string StrSender { get; set; }
 
 
-        public static Mail FromId(Client session, string id)
+        public static Mail FromId(TempMailClient session, string id)
         {
             var sourceUrl = $"https://temp-mail.org/en/source/{id}/";
 
@@ -41,7 +41,7 @@ namespace TempMail.API
             return GetMailFromRaw(raw_mail, id);
         }
 
-        public static Mail FromLink(Client session, string link)
+        public static Mail FromLink(TempMailClient session, string link)
         {
             var id = ExtractId(link);
 

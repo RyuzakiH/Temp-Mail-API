@@ -8,7 +8,7 @@ namespace TempMail.Sample
     {
         public static async Task Sample()
         {
-            var client = new Client();
+            var client = new TempMailClient();
 
             // To get a new temporary email
             await client.StartNewSessionAsync();

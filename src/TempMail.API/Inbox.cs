@@ -12,13 +12,13 @@ namespace TempMail.API
 {
     public class Inbox
     {
-        private readonly Client client;
+        private readonly TempMailClient client;
 
         private HtmlDocument _document;
 
         public List<Mail> Mails { get; }
 
-        public Inbox(Client client)
+        public Inbox(TempMailClient client)
         {
             this.client = client;
             _document = new HtmlDocument();

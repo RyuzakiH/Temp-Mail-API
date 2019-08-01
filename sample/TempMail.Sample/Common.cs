@@ -42,7 +42,7 @@ namespace TempMail.Sample
         }
 
 
-        public static void PrintClientData(Client client)
+        public static void PrintClientData(TempMailClient client)
         {
             Console.WriteLine($"Email: {client.Email}");
             Console.WriteLine($"Inbox:");

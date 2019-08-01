@@ -10,9 +10,9 @@ namespace TempMail.API
 {
     public class Change
     {
-        private readonly Client client;
+        private readonly TempMailClient client;
 
-        public Change(Client client)
+        public Change(TempMailClient client)
         {
             this.client = client;
         }
@@ -27,7 +27,7 @@ namespace TempMail.API
             if (!client.AvailableDomains.Contains(domain))
                 throw new InvalidDomainException(domain);
 
-            var csrf = client.GetCsrfCookie();
+            var csrf = client.CsrfCookie;
             var data = BuildPostData(csrf.Value, login, domain);
 
             var response = SendRequest(data);
@@ -48,7 +48,7 @@ namespace TempMail.API
             if (!client.AvailableDomains.Contains(domain))
                 throw new InvalidDomainException(domain);
 
-            var csrf = client.GetCsrfCookie();
+            var csrf = client.CsrfCookie;
             var data = BuildPostData(csrf.Value, login, domain);
 
             var response = await SendRequestAsync(data);

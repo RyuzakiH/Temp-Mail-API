@@ -7,22 +7,16 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Runtime.InteropServices;
-using System.Text;
 using System.Threading.Tasks;
 using TempMail.API.Constants;
 
 namespace TempMail.API
 {
-    public class Client
+    public class TempMailClient : SessionHandler
     {
-        private static readonly Encoding encoding = Encoding.UTF8;
-
-        private CookieContainer cookieContainer;
-
         private List<string> availableDomains;
         public List<string> AvailableDomains => availableDomains ?? (availableDomains = GetAvailableDomains());
 
-        private readonly string _2CaptchaKey;
         private readonly ICaptchaProvider captchaProvider;
 
         private Change change;
@@ -31,11 +25,9 @@ namespace TempMail.API
 
         public string Email { get; set; }
 
-        public HttpClient HttpClient { get; private set; }
-
         private IWebProxy proxy;
 
-        public Client([Optional]ICaptchaProvider captchaProvider, [Optional]IWebProxy proxy)
+        public TempMailClient([Optional]ICaptchaProvider captchaProvider, [Optional]IWebProxy proxy)
         {
             Inbox = new Inbox(this);
             change = new Change(this);
@@ -108,19 +100,14 @@ namespace TempMail.API
         /// </summary>
         public bool Delete()
         {
-            HttpResponseMessage response;
-            using (var requestMessage = new HttpRequestMessage(HttpMethod.Get, Urls.DELETE_URL))
-            {
-                requestMessage.Headers.Add("Accept", "application/json, text/javascript, */*; q=0.01");
-                requestMessage.Headers.Referrer = new Uri(Urls.BASE_URL);
-                requestMessage.Headers.Add("X-Requested-With", "XMLHttpRequest");
-                response = HttpClient.Send(requestMessage);
-            }
+            var response = SendRequest(HttpMethod.Get, Urls.DELETE_URL,
+                "application/json, text/javascript, */*; q=0.01",
+                new Uri(Urls.MAIN_PAGE_URL), null, true, true);
 
             if (response.StatusCode != HttpStatusCode.OK)
                 return false;
 
-            Email = response.Content.ReadAsJsonObject<Dictionary<string, object>>(encoding)?["mail"].ToString();
+            Email = response.Content.ReadAsJsonObject<Dictionary<string, object>>()?["mail"].ToString();
 
             UpdateEmailCookie();
 
@@ -134,19 +121,14 @@ namespace TempMail.API
         /// </summary>
         public async Task<bool> DeleteAsync()
         {
-            HttpResponseMessage response;
-            using (var requestMessage = new HttpRequestMessage(HttpMethod.Get, Urls.DELETE_URL))
-            {
-                requestMessage.Headers.Add("Accept", "application/json, text/javascript, */*; q=0.01");
-                requestMessage.Headers.Referrer = new Uri(Urls.BASE_URL);
-                requestMessage.Headers.Add("X-Requested-With", "XMLHttpRequest");
-                response = await HttpClient.SendAsync(requestMessage);
-            }
+            var response = await SendRequestAsync(HttpMethod.Get, Urls.DELETE_URL,
+                "application/json, text/javascript, */*; q=0.01",
+                new Uri(Urls.MAIN_PAGE_URL), null, true, true);
 
             if (response.StatusCode != HttpStatusCode.OK)
                 return false;
 
-            Email = (await Task.Run(() => response.Content.ReadAsJsonObject<Dictionary<string, object>>(encoding)))?["mail"].ToString();
+            Email = (await Task.Run(() => response.Content.ReadAsJsonObject<Dictionary<string, object>>()))?["mail"].ToString();
 
             await Task.Run(() => UpdateEmailCookie());
 
@@ -156,21 +138,13 @@ namespace TempMail.API
         }
 
 
-        private List<string> GetAvailableDomains()
-        {
-            return HttpClient.GetHtmlDocument(Urls.CHANGE_URL).GetElementbyId("domain").Descendants("option")
+        private List<string> GetAvailableDomains() =>
+            HttpClient.GetHtmlDocument(Urls.CHANGE_URL).GetElementbyId("domain").Descendants("option")
                 .Select(s => s.GetAttributeValue("value", null)).ToList();
-        }
 
-        public Cookie GetCsrfCookie()
-        {
-            return cookieContainer.GetCookies(new Uri(Urls.BASE_URL))["csrf"];
-        }
+        public Cookie CsrfCookie => cookieContainer.GetCookies(new Uri(Urls.BASE_URL))["csrf"];
 
-        private void UpdateEmailCookie()
-        {
-            cookieContainer.SetCookies(new Uri(Urls.BASE_URL), $"mail={Email}");
-        }
+        private void UpdateEmailCookie() => SetCookie("mail", Email);
 
 
         private void CreateHttpClient()

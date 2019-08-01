@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
+using TempMail.API.Constants;
 using TempMail.API.Exceptions;
 
 namespace TempMail.API
@@ -71,20 +72,20 @@ namespace TempMail.API
 
         private HttpResponseMessage SendRequest(Dictionary<string, string> data)
         {
-            using (var requestMessage = new HttpRequestMessage(HttpMethod.Post, Client.CHANGE_URL))
+            using (var requestMessage = new HttpRequestMessage(HttpMethod.Post, Urls.CHANGE_URL))
             {
                 requestMessage.Content = new FormUrlEncodedContent(data);
-                requestMessage.Headers.Referrer = new Uri(Client.CHANGE_URL);
+                requestMessage.Headers.Referrer = new Uri(Urls.CHANGE_URL);
                 return client.HttpClient.Send(requestMessage);
             }
         }
 
         private async Task<HttpResponseMessage> SendRequestAsync(Dictionary<string, string> data)
         {
-            using (var requestMessage = new HttpRequestMessage(HttpMethod.Post, Client.CHANGE_URL))
+            using (var requestMessage = new HttpRequestMessage(HttpMethod.Post, Urls.CHANGE_URL))
             {
                 requestMessage.Content = new FormUrlEncodedContent(data);
-                requestMessage.Headers.Referrer = new Uri(Client.CHANGE_URL);
+                requestMessage.Headers.Referrer = new Uri(Urls.CHANGE_URL);
                 requestMessage.Headers.Add("Origin", "https://temp-mail.org");
                 return await client.HttpClient.SendAsync(requestMessage);
             }

@@ -5,6 +5,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
+using TempMail.API.Constants;
 using TempMail.API.Extensions;
 
 namespace TempMail.API
@@ -28,9 +29,9 @@ namespace TempMail.API
         public IEnumerable<Mail> Refresh()
         {
             HttpResponseMessage response;
-            using (var requestMessage = new HttpRequestMessage(HttpMethod.Get, Client.CHECK_URL))
+            using (var requestMessage = new HttpRequestMessage(HttpMethod.Get, Urls.CHECK_URL))
             {
-                requestMessage.Headers.Referrer = new Uri(Client.BASE_URL);
+                requestMessage.Headers.Referrer = new Uri(Urls.BASE_URL);
                 requestMessage.Headers.Add("X-Requested-With", "XMLHttpRequest");
                 response = client.HttpClient.Send(requestMessage);
             }
@@ -45,9 +46,9 @@ namespace TempMail.API
         public async Task<IEnumerable<Mail>> RefreshAsync()
         {
             HttpResponseMessage response;
-            using (var requestMessage = new HttpRequestMessage(HttpMethod.Get, Client.CHECK_URL))
+            using (var requestMessage = new HttpRequestMessage(HttpMethod.Get, Urls.CHECK_URL))
             {
-                requestMessage.Headers.Referrer = new Uri(Client.BASE_URL);
+                requestMessage.Headers.Referrer = new Uri(Urls.BASE_URL);
                 requestMessage.Headers.Add("X-Requested-With", "XMLHttpRequest");
                 response = await client.HttpClient.SendAsync(requestMessage);
             }

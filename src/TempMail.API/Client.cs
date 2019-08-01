@@ -9,17 +9,12 @@ using System.Net.Http;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
+using TempMail.API.Constants;
 
 namespace TempMail.API
 {
     public class Client
     {
-        public const string BASE_URL = "https://temp-mail.org";
-        public const string MAIN_PAGE_URL = "https://temp-mail.org/en/";
-        public const string CHANGE_URL = "https://temp-mail.org/en/option/change/";
-        public const string CHECK_URL = "https://temp-mail.org/en/option/check/";
-        public const string DELETE_URL = "https://temp-mail.org/en/option/delete/";
-
         private static readonly Encoding encoding = Encoding.UTF8;
         private HttpClientHandler handler;
 
@@ -63,7 +58,7 @@ namespace TempMail.API
             if (!solveResult.Success)
                 throw new CloudflareException(solveResult.FailReason);
 
-            var document = HttpClient.GetHtmlDocument(MAIN_PAGE_URL);
+            var document = HttpClient.GetHtmlDocument(Urls.MAIN_PAGE_URL);
 
             Email = ExtractEmail(document);
         }
@@ -80,7 +75,7 @@ namespace TempMail.API
             if (!solveResult.Success)
                 throw new CloudflareException(solveResult.FailReason);
 
-            var document = await HttpClient.GetHtmlDocumentAsync(MAIN_PAGE_URL);
+            var document = await HttpClient.GetHtmlDocumentAsync(Urls.MAIN_PAGE_URL);
 
             Email = await Task.Run(() => ExtractEmail(document));
         }
@@ -89,10 +84,10 @@ namespace TempMail.API
         {
             var cloudflare = new CloudflareSolver(_2CaptchaKey);
 
-            var result = cloudflare.Solve(HttpClient, handler, new Uri(BASE_URL)).Result;
+            var result = cloudflare.Solve(HttpClient, handler, new Uri(Urls.BASE_URL)).Result;
 
             for (; tries > 0; tries--)
-                result = cloudflare.Solve(HttpClient, handler, new Uri(BASE_URL)).Result;
+                result = cloudflare.Solve(HttpClient, handler, new Uri(Urls.BASE_URL)).Result;
 
             return result;
         }
@@ -101,10 +96,10 @@ namespace TempMail.API
         {
             var cloudflare = new CloudflareSolver(_2CaptchaKey);
 
-            var result = await cloudflare.Solve(HttpClient, handler, new Uri(BASE_URL));
+            var result = await cloudflare.Solve(HttpClient, handler, new Uri(Urls.BASE_URL));
 
             for (; tries > 0; tries--)
-                result = await cloudflare.Solve(HttpClient, handler, new Uri(BASE_URL));
+                result = await cloudflare.Solve(HttpClient, handler, new Uri(Urls.BASE_URL));
 
             return result;
         }
@@ -150,10 +145,10 @@ namespace TempMail.API
         public bool Delete()
         {
             HttpResponseMessage response;
-            using (var requestMessage = new HttpRequestMessage(HttpMethod.Get, DELETE_URL))
+            using (var requestMessage = new HttpRequestMessage(HttpMethod.Get, Urls.DELETE_URL))
             {
                 requestMessage.Headers.Add("Accept", "application/json, text/javascript, */*; q=0.01");
-                requestMessage.Headers.Referrer = new Uri(BASE_URL);
+                requestMessage.Headers.Referrer = new Uri(Urls.BASE_URL);
                 requestMessage.Headers.Add("X-Requested-With", "XMLHttpRequest");
                 response = HttpClient.Send(requestMessage);
             }
@@ -176,10 +171,10 @@ namespace TempMail.API
         public async Task<bool> DeleteAsync()
         {
             HttpResponseMessage response;
-            using (var requestMessage = new HttpRequestMessage(HttpMethod.Get, DELETE_URL))
+            using (var requestMessage = new HttpRequestMessage(HttpMethod.Get, Urls.DELETE_URL))
             {
                 requestMessage.Headers.Add("Accept", "application/json, text/javascript, */*; q=0.01");
-                requestMessage.Headers.Referrer = new Uri(BASE_URL);
+                requestMessage.Headers.Referrer = new Uri(Urls.BASE_URL);
                 requestMessage.Headers.Add("X-Requested-With", "XMLHttpRequest");
                 response = await HttpClient.SendAsync(requestMessage);
             }
@@ -199,18 +194,18 @@ namespace TempMail.API
 
         private List<string> GetAvailableDomains()
         {
-            return HttpClient.GetHtmlDocument(CHANGE_URL).GetElementbyId("domain").Descendants("option")
+            return HttpClient.GetHtmlDocument(Urls.CHANGE_URL).GetElementbyId("domain").Descendants("option")
                 .Select(s => s.GetAttributeValue("value", null)).ToList();
         }
 
         public Cookie GetCsrfCookie()
         {
-            return cookies.GetCookies(new Uri(BASE_URL))["csrf"];
+            return cookies.GetCookies(new Uri(Urls.BASE_URL))["csrf"];
         }
 
         private void UpdateEmailCookie()
         {
-            cookies.SetCookies(new Uri(BASE_URL), $"mail={Email}");
+            cookies.SetCookies(new Uri(Urls.BASE_URL), $"mail={Email}");
         }
 
 

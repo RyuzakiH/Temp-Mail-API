@@ -4,6 +4,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using TempMail.API.Constants;
+using TempMail.API.Events;
 using TempMail.API.Extensions;
 using TempMail.API.Utilities;
 
@@ -14,6 +15,8 @@ namespace TempMail.API
         private readonly TempMailClient client;
 
         public List<Mail> Mails { get; }
+
+        public event EventHandler<NewMailReceivedEventArgs> NewMailReceived;
 
         public Inbox(TempMailClient client)
         {
@@ -52,6 +55,9 @@ namespace TempMail.API
             var newMailsIds = mailsIds.Where(IsNewMail);
             var newMails = GetMails(newMailsIds);
             Mails.AddRange(newMails);
+
+            foreach (var mail in newMails)
+                NewMailReceived?.Invoke(this, new NewMailReceivedEventArgs(mail));
         }
 
         private async Task UpdateMailsAsync(string checkResponse)
@@ -60,6 +66,9 @@ namespace TempMail.API
             var newMailsIds = mailsIds.Where(IsNewMail);
             var newMails = await GetMailsAsync(newMailsIds);
             Mails.AddRange(newMails);
+
+            foreach (var mail in newMails)
+                NewMailReceived?.Invoke(this, new NewMailReceivedEventArgs(mail));
         }
 
         private bool IsNewMail(string mailId) => !Mails.Any(mail => mail.Id.Equals(mailId));

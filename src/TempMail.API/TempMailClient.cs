@@ -8,6 +8,7 @@ using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using TempMail.API.Constants;
+using TempMail.API.Events;
 using TempMail.API.Extensions;
 using TempMail.API.Utilities;
 
@@ -25,6 +26,7 @@ namespace TempMail.API
 
         public string Email { get; set; }
 
+        public event EventHandler<EmailChangedEventArgs> EmailChanged;
 
         public TempMailClient([Optional]ICaptchaProvider captchaProvider, [Optional]IWebProxy proxy)
         {
@@ -40,7 +42,9 @@ namespace TempMail.API
         public void StartNewSession()
         {
             CreateHttpClient();
-            
+
+            EmailChanged += (o, e) => Inbox.Clear();
+
             var document = HttpClient.GetString(Urls.MAIN_PAGE_URL);
 
             Email = Parser.ExtractEmail(document);
@@ -52,7 +56,9 @@ namespace TempMail.API
         public async Task StartNewSessionAsync()
         {
             await Task.Run(() => CreateHttpClient());
-            
+
+            EmailChanged += (o, e) => Inbox.Clear();
+
             var document = await HttpClient.GetStringAsync(Urls.MAIN_PAGE_URL);
 
             Email = await Task.Run(() => Parser.ExtractEmail(document));
@@ -84,7 +90,7 @@ namespace TempMail.API
 
             Email = $"{login}{Utils.NormalizeDomain(domain)}";
 
-            Inbox.Clear();
+            EmailChanged?.Invoke(this, new EmailChangedEventArgs(Email));
 
             return Email;
         }
@@ -114,7 +120,7 @@ namespace TempMail.API
 
             Email = $"{login}{Utils.NormalizeDomain(domain)}";
 
-            Inbox.Clear();
+            EmailChanged?.Invoke(this, new EmailChangedEventArgs(Email));
 
             return Email;
         }
@@ -136,7 +142,7 @@ namespace TempMail.API
 
             UpdateEmailCookie();
 
-            Inbox.Clear();
+            EmailChanged?.Invoke(this, new EmailChangedEventArgs(Email));
 
             return true;
         }
@@ -157,7 +163,7 @@ namespace TempMail.API
 
             await Task.Run(() => UpdateEmailCookie());
 
-            Inbox.Clear();
+            EmailChanged?.Invoke(this, new EmailChangedEventArgs(Email));
 
             return true;
         }

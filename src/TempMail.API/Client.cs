@@ -1,5 +1,5 @@
-using _2Captcha;
-using Cloudflare;
+using CloudflareSolverRe;
+using CloudflareSolverRe.CaptchaProviders;
 using HtmlAgilityPack;
 using System;
 using System.Collections.Generic;
@@ -16,14 +16,14 @@ namespace TempMail.API
     public class Client
     {
         private static readonly Encoding encoding = Encoding.UTF8;
-        private HttpClientHandler handler;
 
-        private CookieContainer cookies;
+        private CookieContainer cookieContainer;
 
         private List<string> availableDomains;
         public List<string> AvailableDomains => availableDomains ?? (availableDomains = GetAvailableDomains());
 
         private readonly string _2CaptchaKey;
+        private readonly ICaptchaProvider captchaProvider;
 
         private Change change;
 
@@ -33,17 +33,15 @@ namespace TempMail.API
 
         public HttpClient HttpClient { get; private set; }
 
-        public IWebProxy Proxy { get; set; }
+        private IWebProxy proxy;
 
-        public Client([Optional]string _2CaptchaKey, [Optional]IWebProxy proxy)
+        public Client([Optional]ICaptchaProvider captchaProvider, [Optional]IWebProxy proxy)
         {
             Inbox = new Inbox(this);
-
             change = new Change(this);
 
-            Proxy = proxy;
-
-            this._2CaptchaKey = _2CaptchaKey;
+            this.captchaProvider = captchaProvider;
+            this.proxy = proxy;
         }
 
         /// <summary>
@@ -52,12 +50,7 @@ namespace TempMail.API
         public void StartNewSession()
         {
             CreateHttpClient();
-
-            var solveResult = BybassCloudflare();
-
-            if (!solveResult.Success)
-                throw new CloudflareException(solveResult.FailReason);
-
+            
             var document = HttpClient.GetHtmlDocument(Urls.MAIN_PAGE_URL);
 
             Email = ExtractEmail(document);
@@ -69,41 +62,12 @@ namespace TempMail.API
         public async Task StartNewSessionAsync()
         {
             await Task.Run(() => CreateHttpClient());
-
-            var solveResult = await BybassCloudflareAsync();
-
-            if (!solveResult.Success)
-                throw new CloudflareException(solveResult.FailReason);
-
+            
             var document = await HttpClient.GetHtmlDocumentAsync(Urls.MAIN_PAGE_URL);
 
             Email = await Task.Run(() => ExtractEmail(document));
         }
-
-        private CloudflareSolveResult BybassCloudflare(int tries = 2)
-        {
-            var cloudflare = new CloudflareSolver(_2CaptchaKey);
-
-            var result = cloudflare.Solve(HttpClient, handler, new Uri(Urls.BASE_URL)).Result;
-
-            for (; tries > 0; tries--)
-                result = cloudflare.Solve(HttpClient, handler, new Uri(Urls.BASE_URL)).Result;
-
-            return result;
-        }
-
-        private async Task<CloudflareSolveResult> BybassCloudflareAsync(int tries = 2)
-        {
-            var cloudflare = new CloudflareSolver(_2CaptchaKey);
-
-            var result = await cloudflare.Solve(HttpClient, handler, new Uri(Urls.BASE_URL));
-
-            for (; tries > 0; tries--)
-                result = await cloudflare.Solve(HttpClient, handler, new Uri(Urls.BASE_URL));
-
-            return result;
-        }
-
+        
         private string ExtractEmail(HtmlDocument document)
         {
             return document.GetElementbyId("mail")?.GetAttributeValue("value", null);
@@ -200,37 +164,37 @@ namespace TempMail.API
 
         public Cookie GetCsrfCookie()
         {
-            return cookies.GetCookies(new Uri(Urls.BASE_URL))["csrf"];
+            return cookieContainer.GetCookies(new Uri(Urls.BASE_URL))["csrf"];
         }
 
         private void UpdateEmailCookie()
         {
-            cookies.SetCookies(new Uri(Urls.BASE_URL), $"mail={Email}");
+            cookieContainer.SetCookies(new Uri(Urls.BASE_URL), $"mail={Email}");
         }
 
 
         private void CreateHttpClient()
         {
-            cookies = new CookieContainer();
+            cookieContainer = new CookieContainer();
 
-            handler = new HttpClientHandler
+            var handler = new ClearanceHandler(captchaProvider)
             {
-                UseCookies = true,
-                CookieContainer = cookies,
-                AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate,
-                Proxy = Proxy
-                //AllowAutoRedirect = true
+                InnerHandler = new HttpClientHandler
+                {
+                    CookieContainer = cookieContainer,
+                    AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate,
+                    Proxy = proxy
+                },
+                MaxTries = 5,
+                ClearanceDelay = 3000
             };
 
             HttpClient = new HttpClient(handler);
 
-            HttpClient.DefaultRequestHeaders.Add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8");
-            //HttpClient.DefaultRequestHeaders.Add("Accept-Encoding", "gzip, deflate");
-            HttpClient.DefaultRequestHeaders.Add("Accept-Language", "en-US,en");
-            HttpClient.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.109 Safari/537.36");
+            HttpClient.DefaultRequestHeaders.Add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3");
+            HttpClient.DefaultRequestHeaders.Add("Accept-Language", "en-US,en;q=0.9");
+            HttpClient.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.142 Safari/537.36");
             HttpClient.DefaultRequestHeaders.Add("Host", "temp-mail.org");
-            //HttpClient.DefaultRequestHeaders.Add("Origin", "https://temp-mail.org");
-            //HttpClient.DefaultRequestHeaders.Add("X-Requested-With", "XMLHttpRequest");
             HttpClient.DefaultRequestHeaders.Add("Upgrade-Insecure-Requests", "1");
             HttpClient.DefaultRequestHeaders.Add("Connection", "keep-alive");
         }

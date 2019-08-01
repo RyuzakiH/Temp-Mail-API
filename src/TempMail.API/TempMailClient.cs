@@ -1,15 +1,14 @@
 using CloudflareSolverRe;
 using CloudflareSolverRe.CaptchaProviders;
-using HtmlAgilityPack;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using TempMail.API.Constants;
+using TempMail.API.Extensions;
 using TempMail.API.Utilities;
 
 namespace TempMail.API
@@ -42,9 +41,9 @@ namespace TempMail.API
         {
             CreateHttpClient();
             
-            var document = HttpClient.GetHtmlDocument(Urls.MAIN_PAGE_URL);
+            var document = HttpClient.GetString(Urls.MAIN_PAGE_URL);
 
-            Email = ExtractEmail(document);
+            Email = Parser.ExtractEmail(document);
         }
 
         /// <summary>
@@ -54,14 +53,9 @@ namespace TempMail.API
         {
             await Task.Run(() => CreateHttpClient());
             
-            var document = await HttpClient.GetHtmlDocumentAsync(Urls.MAIN_PAGE_URL);
+            var document = await HttpClient.GetStringAsync(Urls.MAIN_PAGE_URL);
 
-            Email = await Task.Run(() => ExtractEmail(document));
-        }
-        
-        private string ExtractEmail(HtmlDocument document)
-        {
-            return document.GetElementbyId("mail")?.GetAttributeValue("value", null);
+            Email = await Task.Run(() => Parser.ExtractEmail(document));
         }
 
 
@@ -138,7 +132,7 @@ namespace TempMail.API
             if (response.StatusCode != HttpStatusCode.OK)
                 return false;
 
-            Email = Regex.Match(response.Content.ReadAsString(), @"{""mail""\s*:\s*""(?<mail>.*?)""}").Groups["mail"].Value;
+            Email = Parser.ExtractEmailFromDeleteResponse(response.Content.ReadAsString());
 
             UpdateEmailCookie();
 
@@ -169,9 +163,7 @@ namespace TempMail.API
         }
 
 
-        private List<string> GetAvailableDomains() =>
-            HttpClient.GetHtmlDocument(Urls.CHANGE_URL).GetElementbyId("domain").Descendants("option")
-                .Select(s => s.GetAttributeValue("value", null)).ToList();
+        private List<string> GetAvailableDomains() => Parser.ExtractAvailableDomains(HttpClient.GetString(Urls.CHANGE_URL));
 
         private void UpdateEmailCookie() => SetCookie("mail", Email);
 

@@ -1,12 +1,11 @@
-﻿using HtmlAgilityPack;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
-using System.Text;
 using System.Threading.Tasks;
 using TempMail.API.Constants;
 using TempMail.API.Extensions;
+using TempMail.API.Utilities;
 
 namespace TempMail.API
 {
@@ -14,85 +13,72 @@ namespace TempMail.API
     {
         private readonly TempMailClient client;
 
-        private HtmlDocument _document;
-
         public List<Mail> Mails { get; }
 
         public Inbox(TempMailClient client)
         {
             this.client = client;
-            _document = new HtmlDocument();
             Mails = new List<Mail>();
         }
 
 
         public IEnumerable<Mail> Refresh()
         {
-            HttpResponseMessage response;
-            using (var requestMessage = new HttpRequestMessage(HttpMethod.Get, Urls.CHECK_URL))
-            {
-                requestMessage.Headers.Referrer = new Uri(Urls.BASE_URL);
-                requestMessage.Headers.Add("X-Requested-With", "XMLHttpRequest");
-                response = client.HttpClient.Send(requestMessage);
-            }
+            var response = client.SendRequest(HttpMethod.Get, Urls.CHECK_URL,
+                referrer: new Uri(Urls.BASE_URL), xml: true, jsDateQuery: true);
 
-            _document = response.Content.ReadAsHtmlDocument(Encoding.UTF8);
+            var document = response.Content.ReadAsString();
 
-            Mails.AddRange(GetNewMails(ExtractSimpleMails()));
+            UpdateMails(document);
 
             return Mails;
         }
 
         public async Task<IEnumerable<Mail>> RefreshAsync()
         {
-            HttpResponseMessage response;
-            using (var requestMessage = new HttpRequestMessage(HttpMethod.Get, Urls.CHECK_URL))
-            {
-                requestMessage.Headers.Referrer = new Uri(Urls.BASE_URL);
-                requestMessage.Headers.Add("X-Requested-With", "XMLHttpRequest");
-                response = await client.HttpClient.SendAsync(requestMessage);
-            }
+            var response = await client.SendRequestAsync(HttpMethod.Get, Urls.CHECK_URL,
+                referrer: new Uri(Urls.BASE_URL), xml: true, jsDateQuery: true);
 
-            _document = await response.Content.ReadAsHtmlDocumentAsync(Encoding.UTF8);
+            var document = await response.Content.ReadAsStringAsync();
 
-            Mails.AddRange(await Task.Run(() => GetNewMails(ExtractSimpleMails())));
+            await UpdateMailsAsync(document);
 
             return Mails;
+        }
+
+        private void UpdateMails(string checkResponse)
+        {
+            var mailsIds = Parser.ExtractMailsIds(checkResponse);
+            var newMailsIds = mailsIds.Where(IsNewMail);
+            var newMails = GetMails(newMailsIds);
+            Mails.AddRange(newMails);
+        }
+
+        private async Task UpdateMailsAsync(string checkResponse)
+        {
+            var mailsIds = Parser.ExtractMailsIds(checkResponse);
+            var newMailsIds = mailsIds.Where(IsNewMail);
+            var newMails = await GetMailsAsync(newMailsIds);
+            Mails.AddRange(newMails);
+        }
+
+        private bool IsNewMail(string mailId) => !Mails.Any(mail => mail.Id.Equals(mailId));
+
+        private IEnumerable<Mail> GetMails(IEnumerable<string> mailsIds) =>
+            mailsIds.Select(id => Mail.FromId(client, id)).ToList();
+
+        private async Task<IEnumerable<Mail>> GetMailsAsync(IEnumerable<string> mailsIds)
+        {
+            var resultMails = new List<Mail>();
+            foreach (var id in mailsIds)
+                resultMails.Add(await Task.Run(() => Mail.FromId(client, id)));
+            return resultMails;
         }
 
 
         public void Clear()
         {
             Mails.Clear();
-            _document = new HtmlDocument();
         }
-
-        public IEnumerable<Mail> ExtractSimpleMails() =>
-            _document.DocumentNode.Descendants("li").Select(ExtractSimpleMail).ToList();
-
-        private Mail ExtractSimpleMail(HtmlNode li)
-        {
-            var sender = li.Descendants("span").Where(d =>   d.Attributes["class"].Value.Equals("inboxSenderName")).FirstOrDefault().InnerText;
-
-            var span = li.Descendants("span").Where(d =>   d.Attributes["class"].Value.Equals("inboxSubject subject-title")).FirstOrDefault();
-
-            var a =  span.Descendants("a").FirstOrDefault();
-
-            var link = a.GetAttributeValue("href", null);
-            var subject = a.GetAttributeValue("title", null);
-
-            return new Mail()
-            {
-                Id = Mail.ExtractId(link),
-                Subject = subject,
-                StrSender = sender,
-                Link = link
-            };
-        }
-
-        private IEnumerable<Mail> GetNewMails(IEnumerable<Mail> mails) => 
-            mails.Where(mail => Mails.Count(m => m.Id == mail.Id) == 0)
-                .Select(mail => Mail.FromId(client, mail.Id)).ToList();
-
     }
 }

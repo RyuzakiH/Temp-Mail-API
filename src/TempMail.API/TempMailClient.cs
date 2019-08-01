@@ -15,16 +15,16 @@ namespace TempMail.API
 {
     public class TempMailClient : SessionHandler
     {
+        private readonly ICaptchaProvider captchaProvider;
+        private IWebProxy proxy;
+
         private List<string> availableDomains;
         public List<string> AvailableDomains => availableDomains ?? (availableDomains = GetAvailableDomains());
-
-        private readonly ICaptchaProvider captchaProvider;
 
         public Inbox Inbox;
 
         public string Email { get; set; }
 
-        private IWebProxy proxy;
 
         public TempMailClient([Optional]ICaptchaProvider captchaProvider, [Optional]IWebProxy proxy)
         {
@@ -171,8 +171,6 @@ namespace TempMail.API
         private List<string> GetAvailableDomains() =>
             HttpClient.GetHtmlDocument(Urls.CHANGE_URL).GetElementbyId("domain").Descendants("option")
                 .Select(s => s.GetAttributeValue("value", null)).ToList();
-
-        public Cookie CsrfCookie => cookieContainer.GetCookies(new Uri(Urls.BASE_URL))["csrf"];
 
         private void UpdateEmailCookie() => SetCookie("mail", Email);
 

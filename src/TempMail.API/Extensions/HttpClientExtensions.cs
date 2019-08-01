@@ -1,5 +1,4 @@
 ﻿using HtmlAgilityPack;
-using Newtonsoft.Json;
 using System.IO;
 using System.Text;
 using System.Threading;
@@ -298,35 +297,6 @@ namespace System.Net.Http
         }
 
         #endregion
-
-
-
-        #region GetJsonObject
-
-        public static T GetJsonObject<T>(this HttpClient client, string url)
-        {
-            return JsonConvert.DeserializeObject<T>(client.Get(url).Content.ReadAsString());
-        }
-
-        public static T GetJsonObject<T>(this HttpClient client, string url, Encoding encoding)
-        {
-            return JsonConvert.DeserializeObject<T>(client.Get(url).Content.ReadAsString(encoding));
-        }
-
-        public static async Task<T> GetJsonObjectAsync<T>(this HttpClient client, string url)
-        {
-            return await Task.Run(async () => JsonConvert.DeserializeObject<T>(await (await client.GetAsync(url)).Content.ReadAsStringAsync()));
-        }
-
-        public static async Task<T> GetJsonObjectAsync<T>(this HttpClient client, string url, Encoding encoding)
-        {
-            return await Task.Run(async () => JsonConvert.DeserializeObject<T>(await (await client.GetAsync(url)).Content.ReadAsStringAsync(encoding)));
-        }
-
-        #endregion
-
-
-
 
 
 
@@ -680,28 +650,7 @@ namespace System.Net.Http
 
 
 
-        public static T ReadAsJsonObject<T>(this HttpContent content)
-        {
-            return JsonConvert.DeserializeObject<T>(content.ReadAsString());
-        }
-
-        public static T ReadAsJsonObject<T>(this HttpContent content, Encoding encoding)
-        {
-            return JsonConvert.DeserializeObject<T>(content.ReadAsString(encoding));
-        }
-
-        public static async Task<T> ReadAsJsonObjectAsync<T>(this HttpContent content)
-        {
-            return await Task.Run(async () => JsonConvert.DeserializeObject<T>(await content.ReadAsStringAsync()));
-        }
-
-        public static async Task<T> ReadAsJsonObjectAsync<T>(this HttpContent content, Encoding encoding)
-        {
-            return await Task.Run(async () => JsonConvert.DeserializeObject<T>(await content.ReadAsStringAsync(encoding)));
-        }
-
-
-
+        
 
 
 

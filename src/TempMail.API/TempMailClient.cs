@@ -7,6 +7,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Runtime.InteropServices;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using TempMail.API.Constants;
 using TempMail.API.Utilities;
@@ -82,7 +83,7 @@ namespace TempMail.API
             };
 
             var response = SendRequest(HttpMethod.Post, Urls.CHANGE_URL,
-                referrer: new Uri(Urls.CHANGE_URL), content: new FormUrlEncodedContent(data));
+                referrer: new Uri(Urls.CHANGE_URL), content: new FormUrlEncodedContent(data), origin: true);
 
             if (response.StatusCode != HttpStatusCode.OK)
                 return null;
@@ -112,7 +113,7 @@ namespace TempMail.API
             };
 
             var response = await SendRequestAsync(HttpMethod.Post, Urls.CHANGE_URL,
-                referrer: new Uri(Urls.CHANGE_URL), content: new FormUrlEncodedContent(data));
+                referrer: new Uri(Urls.CHANGE_URL), content: new FormUrlEncodedContent(data), origin: true);
 
             if (response.StatusCode != HttpStatusCode.OK)
                 return null;
@@ -132,12 +133,12 @@ namespace TempMail.API
         {
             var response = SendRequest(HttpMethod.Get, Urls.DELETE_URL,
                 "application/json, text/javascript, */*; q=0.01",
-                new Uri(Urls.MAIN_PAGE_URL), null, true, true);
+                new Uri(Urls.MAIN_PAGE_URL), null, true, false, true);
 
             if (response.StatusCode != HttpStatusCode.OK)
                 return false;
 
-            Email = response.Content.ReadAsJsonObject<Dictionary<string, object>>()?["mail"].ToString();
+            Email = Regex.Match(response.Content.ReadAsString(), @"{""mail""\s*:\s*""(?<mail>.*?)""}").Groups["mail"].Value;
 
             UpdateEmailCookie();
 
@@ -153,12 +154,12 @@ namespace TempMail.API
         {
             var response = await SendRequestAsync(HttpMethod.Get, Urls.DELETE_URL,
                 "application/json, text/javascript, */*; q=0.01",
-                new Uri(Urls.MAIN_PAGE_URL), null, true, true);
+                new Uri(Urls.MAIN_PAGE_URL), null, true, false, true);
 
             if (response.StatusCode != HttpStatusCode.OK)
                 return false;
 
-            Email = (await Task.Run(() => response.Content.ReadAsJsonObject<Dictionary<string, object>>()))?["mail"].ToString();
+            Email = (await Task.Run(() => Regex.Match(response.Content.ReadAsString(), @"{""mail""\s*:\s*""(?<mail>.*?)""}").Groups["mail"].Value));
 
             await Task.Run(() => UpdateEmailCookie());
 

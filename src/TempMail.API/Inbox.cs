@@ -74,13 +74,13 @@ namespace TempMail.API
         private bool IsNewMail(string mailId) => !Mails.Any(mail => mail.Id.Equals(mailId));
 
         private IEnumerable<Mail> GetMails(IEnumerable<string> mailsIds) =>
-            mailsIds.Select(id => Mail.FromId(client, id)).ToList();
+            mailsIds.Select(id => new Mail(client, id).Load()).ToList();
 
         private async Task<IEnumerable<Mail>> GetMailsAsync(IEnumerable<string> mailsIds)
         {
             var resultMails = new List<Mail>();
             foreach (var id in mailsIds)
-                resultMails.Add(await Task.Run(() => Mail.FromId(client, id)));
+                resultMails.Add(await new Mail(client, id).LoadAsync());
             return resultMails;
         }
 

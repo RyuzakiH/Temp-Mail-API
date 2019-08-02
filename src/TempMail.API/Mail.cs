@@ -3,135 +3,96 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Net.Http;
 using System.Text;
-using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using TempMail.API.Extensions;
+using TempMail.API.Utilities;
 
 namespace TempMail.API
 {
-    public class Mail : MimeMessage
+    public class Mail
     {
-        public new InternetAddressList From { get; private set; }
-        public new InternetAddressList ResentFrom { get; private set; }
-        public new InternetAddressList ReplyTo { get; private set; }
-        public new InternetAddressList ResentReplyTo { get; private set; }
-        public new InternetAddressList To { get; private set; }
-        public new InternetAddressList ResentTo { get; private set; }
-        public new InternetAddressList Cc { get; private set; }
-        public new InternetAddressList ResentCc { get; private set; }
-        public new InternetAddressList Bcc { get; private set; }
-        public new InternetAddressList ResentBcc { get; private set; }
-        public new string TextBody { get; private set; }
-        public new string HtmlBody { get; private set; }
-        public new HeaderList Headers { get; private set; }
-        public new IEnumerable<MimeEntity> BodyParts { get; private set; }
-        public new IEnumerable<MimePart> Attachments { get; private set; }
-        public string Id { get; set; }
-        public string Link { get; set; }
-        public string StrSender { get; set; }
+        private TempMailClient client;
+
+        internal bool CanLoad => Id != null;
+        internal bool IsLoaded => MimeMessage != null;
+
+        public MimeMessage MimeMessage { get; set; }
+
+        public string Id { get; private set; }
+        public Uri Link { get; private set; }
+
+        public string SenderName => MimeMessage.From.FirstOrDefault()?.Name;
+        public string Subject => MimeMessage.Subject;
+        public InternetAddressList From => MimeMessage.From;
+        public InternetAddressList To => MimeMessage.To;
+        public string TextBody => MimeMessage.TextBody;
+        public string HtmlBody => MimeMessage.HtmlBody;
+        public DateTimeOffset? Date => MimeMessage.Date;
+        public IEnumerable<MimePart> Attachments => MimeMessage.Attachments.Cast<MimePart>();
 
 
-        public static Mail FromId(TempMailClient session, string id)
+        public Mail(TempMailClient client, string id)
         {
-            var sourceUrl = $"https://temp-mail.org/en/source/{id}/";
-
-            var raw_mail = session.HttpClient.GetString(sourceUrl);
-            
-            return GetMailFromRaw(raw_mail, id);
+            this.client = client;
+            Id = id;
+            Link = Links.CreateSourceLink(id);
         }
 
-        public static Mail FromLink(TempMailClient session, string link)
+        public Mail(TempMailClient client, Uri link)
         {
-            var id = ExtractId(link);
-
-            var sourceUrl = $"https://temp-mail.org/en/source/{id}/";
-
-            var raw_mail = session.HttpClient.GetString(sourceUrl);
-
-            return GetMailFromRaw(raw_mail, id);
-        }
-
-        private static Mail GetMailFromRaw(string raw_mail, string id)
-        {
-            var mail = Parse(raw_mail);
-            mail.Id = id;
-            
-            return mail;
+            this.client = client;
+            Link = link;
+            Id = Links.GetId(link);
         }
 
 
-        public static Mail Parse(string raw_mail)
+        public Mail Load()
         {
-            var message = Load(GenerateStreamFromString(raw_mail));
-            
-            return ConvertMessageToMail(message);
+            if (!CanLoad || IsLoaded)
+                return this;
+
+            var raw_mail = GetRawMail();
+            return LoadFromRaw(raw_mail);
         }
 
-        private static MemoryStream GenerateStreamFromString(string value)
+        public async Task<Mail> LoadAsync()
         {
-            return new MemoryStream(Encoding.UTF8.GetBytes(value ?? ""));
+            if (!CanLoad || IsLoaded)
+                return this;
+
+            var raw_mail = await GetRawMailAsync();
+            return await LoadFromRawAsync(raw_mail);
         }
 
-        private static Mail ConvertMessageToMail(MimeMessage message)
-        {
-            var mail = new Mail
-            {
-                Attachments = message.Attachments.Cast<MimePart>(),
-                Bcc = message.Bcc,
-                Body = message.Body,
-                BodyParts = message.BodyParts,
-                Cc = message.Cc,
-                Date = message.Date,
-                From = message.From,
-                Headers = message.Headers,
-                HtmlBody = message.HtmlBody,
-                Importance = message.Importance,
-                InReplyTo = message.InReplyTo,
-                MessageId = message.MessageId,
-                MimeVersion = message.MimeVersion,
-                Priority = message.Priority,
-                //References = message.References,
-                ReplyTo = message.ReplyTo,
-                ResentBcc = message.ResentBcc,
-                ResentCc = message.ResentCc,
-                ResentDate = message.ResentDate,
-                ResentFrom = message.ResentFrom,
-                //ResentMessageId = message.ResentMessageId,
-                ResentReplyTo = message.ResentReplyTo,
-                ResentSender = message.ResentSender,
-                ResentTo = message.ResentTo,
-                Sender = message.Sender,
-                Subject = message.Subject,
-                TextBody = message.TextBody,
-                To = message.To,
-                XPriority = message.XPriority
-            };
-            
-            if (message.ResentMessageId != null)
-                mail.ResentMessageId = message.ResentMessageId;
+        private string GetRawMail() => client.HttpClient.GetString(Link);
 
-            mail.References.AddRange(message.References);
-            
-            return mail;
-            //return (Mail)message.CastTo(typeof(Mail));
-        }
-        
-        public static string ExtractId(string link)
+        private async Task<string> GetRawMailAsync() => await client.HttpClient.GetStringAsync(Link);
+
+        private Mail LoadFromRaw(string raw_mail)
         {
-            return Regex.Match(link, @"https://temp-mail.org/en/.*?/(?<id>.*)").Groups["id"].Value;
+            MimeMessage = GetMimeMessage(raw_mail);
+            return this;
         }
+
+        private async Task<Mail> LoadFromRawAsync(string raw_mail)
+        {
+            MimeMessage = await GetMimeMessageAsync(raw_mail);
+            return this;
+        }
+
+        private static MimeMessage GetMimeMessage(string raw_mail) =>
+            MimeMessage.Load(raw_mail.ToMemoryStream());
+
+        private static async Task<MimeMessage> GetMimeMessageAsync(string raw_mail) =>
+            await MimeMessage.LoadAsync(raw_mail.ToMemoryStream());
 
         public void SaveAttachment(MimePart attachment, string directory = "", string altFileName = null)
         {
             var fileName = attachment.FileName ?? altFileName ?? $"file{ new Random().Next(10000) }";
 
             using (var stream = File.Create(Path.Combine(directory, fileName)))
-            {
                 attachment.Content.DecodeTo(stream);
-            }
         }
-
     }
-
 }

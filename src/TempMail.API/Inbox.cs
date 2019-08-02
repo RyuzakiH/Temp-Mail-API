@@ -51,8 +51,7 @@ namespace TempMail.API
 
         private void UpdateMails(string checkResponse)
         {
-            var mailsIds = Parser.GetMailsIds(checkResponse);
-            var newMailsIds = mailsIds.Where(IsNewMail);
+            var newMailsIds = Parser.GetMailsIds(checkResponse).Where(IsNewMail);
             var newMails = GetMails(newMailsIds);
             Mails.AddRange(newMails);
 
@@ -62,8 +61,7 @@ namespace TempMail.API
 
         private async Task UpdateMailsAsync(string checkResponse)
         {
-            var mailsIds = Parser.GetMailsIds(checkResponse);
-            var newMailsIds = mailsIds.Where(IsNewMail);
+            var newMailsIds = Parser.GetMailsIds(checkResponse).Where(IsNewMail);
             var newMails = await GetMailsAsync(newMailsIds);
             Mails.AddRange(newMails);
 

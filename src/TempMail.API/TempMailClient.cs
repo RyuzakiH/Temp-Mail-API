@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
 using System.Runtime.InteropServices;
+using System.Threading;
 using System.Threading.Tasks;
 using TempMail.API.Constants;
 using TempMail.API.Events;
@@ -15,6 +16,10 @@ namespace TempMail.API
     public class TempMailClient : SessionHandler, IDisposable
     {
         private bool disposed;
+
+        public CancellationTokenSource CancellationToken { get; set; }
+        
+        public bool IsAutoCheckRunning { get => CancellationToken != null && CancellationToken.Token.CanBeCanceled; }
 
         public List<string> AvailableDomains { get; private set; }
 
@@ -28,14 +33,14 @@ namespace TempMail.API
         public static TempMailClient Create([Optional]ICaptchaProvider captchaProvider, [Optional]IWebProxy proxy)
         {
             var client = new TempMailClient(captchaProvider, proxy);
-            client.StartNewSession();
+            client.StartSession();
             return client;
         }
 
         public static async Task<TempMailClient> CreateAsync([Optional]ICaptchaProvider captchaProvider, [Optional]IWebProxy proxy)
         {
             var client = new TempMailClient(captchaProvider, proxy);
-            await client.StartNewSessionAsync();
+            await client.StartSessionAsync();
             return client;
         }
 
@@ -50,7 +55,7 @@ namespace TempMail.API
         /// <summary>
         /// Starts a new client session and get a new temporary email.
         /// </summary>
-        internal void StartNewSession()
+        internal void StartSession()
         {
             CreateHttpClient();
 
@@ -64,7 +69,7 @@ namespace TempMail.API
         /// <summary>
         /// Starts a new client session and get a new temporary email.
         /// </summary>
-        internal async Task StartNewSessionAsync()
+        internal async Task StartSessionAsync()
         {
             await Task.Run(() => CreateHttpClient());
 
@@ -191,6 +196,39 @@ namespace TempMail.API
             UpdateEmailCookie(email);
 
             EmailChanged?.Invoke(this, new EmailChangedEventArgs(Email));
+        }
+
+
+        public void StartAutoCheck(int delay = 10000)
+        {
+            ThrowIfDisposed();
+
+            if (IsAutoCheckRunning)
+                return;
+
+            CancellationToken = new CancellationTokenSource();
+
+            RunAutoCheck(delay);
+        }
+
+        private async Task RunAutoCheck(int delay = 10000)
+        {
+            while (!CancellationToken.IsCancellationRequested)
+            {
+                await Inbox.RefreshAsync();
+                await Task.Delay(delay);
+            }
+        }
+
+        public void StopAutoCheck()
+        {
+            ThrowIfDisposed();
+
+            if (!IsAutoCheckRunning)
+                return;
+
+            CancellationToken.Cancel();
+            CancellationToken = null;
         }
 
 

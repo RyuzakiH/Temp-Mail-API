@@ -13,7 +13,7 @@
             //    Proxy = new WebProxy("163.172.220.221", 8888)
             //};
 
-            TempMailSample.Sample();
+            //TempMailSample.Sample();
 
             TempMailSampleAsync.Sample().Wait();
         }

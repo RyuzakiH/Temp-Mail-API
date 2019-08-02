@@ -41,9 +41,11 @@ namespace TempMail.Sample
 
         public static void PrintClientData(TempMailClient client)
         {
+            Console.WriteLine("========================================");
             Console.WriteLine($"Email: {client.Email}");
-            Console.WriteLine($"Inbox:");
+            Console.WriteLine("Inbox:");
             client.Inbox.Mails.ForEach(PrintMail);
+            Console.WriteLine("========================================");
         }
 
         public static void PrintMail(Mail mail) =>

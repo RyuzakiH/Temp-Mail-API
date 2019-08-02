@@ -91,29 +91,33 @@ namespace TempMail.API
         private static async Task<MimeMessage> GetMimeMessageAsync(string raw_mail) =>
             await MimeMessage.LoadAsync(raw_mail.ToMemoryStream());
 
-        
-        public void SaveAttachments() => Attachments.ToList().ForEach(attachment => SaveAttachment(attachment));
+
+        public void SaveAttachments() => Attachments.ToList().ForEach(attachment => SaveAttachment(attachment, Path.Combine(client.Email, Id)));
 
         public async Task SaveAttachmentsAsync()
         {
             foreach (var attachment in Attachments)
-                await SaveAttachmentAsync(attachment);
+                await SaveAttachmentAsync(attachment, Path.Combine(client.Email, Id));
         }
 
         public static void SaveAttachment(MimeEntity attachment, string directory = "", string altFileName = null)
         {
+            Directory.CreateDirectory(directory);
+
             if (attachment is MessagePart)
-                SaveAttachment((MessagePart)attachment);
+                SaveAttachment((MessagePart)attachment, directory, altFileName);
             else
-                SaveAttachment((MimePart)attachment);
+                SaveAttachment((MimePart)attachment, directory, altFileName);
         }
 
         public static async Task SaveAttachmentAsync(MimeEntity attachment, string directory = "", string altFileName = null)
         {
+            Directory.CreateDirectory(directory);
+
             if (attachment is MessagePart)
-                await SaveAttachmentAsync((MessagePart)attachment);
+                await SaveAttachmentAsync((MessagePart)attachment, directory, altFileName);
             else
-                await SaveAttachmentAsync((MimePart)attachment);
+                await SaveAttachmentAsync((MimePart)attachment, directory, altFileName);
         }
 
         private static void SaveAttachment(MessagePart attachment, string directory = "", string altFileName = null)

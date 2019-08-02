@@ -45,7 +45,9 @@ namespace TempMail.API
             Id = Parser.GetMailId(link);
         }
 
-
+        /// <summary>
+        /// Loads Mail from the specified link or id.
+        /// </summary>
         public Mail Load()
         {
             if (!CanLoad || IsLoaded)
@@ -55,6 +57,9 @@ namespace TempMail.API
             return LoadFromRaw(raw_mail);
         }
 
+        /// <summary>
+        /// Loads Mail from the specified link or id.
+        /// </summary>
         public async Task<Mail> LoadAsync()
         {
             if (!CanLoad || IsLoaded)

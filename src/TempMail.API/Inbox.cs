@@ -14,8 +14,14 @@ namespace TempMail.API
     {
         private readonly TempMailClient client;
 
+        /// <summary>
+        /// Gets the list of mails received by the client.
+        /// </summary>
         public List<Mail> Mails { get; }
 
+        /// <summary>
+        /// Occurs when a new mail is received by the client.
+        /// </summary>
         public event EventHandler<NewMailReceivedEventArgs> NewMailReceived;
 
         public Inbox(TempMailClient client)
@@ -24,7 +30,9 @@ namespace TempMail.API
             Mails = new List<Mail>();
         }
 
-
+        /// <summary>
+        /// Checks for new mails.
+        /// </summary>
         public IEnumerable<Mail> Refresh()
         {
             var response = client.SendRequest(HttpMethod.Get, Urls.CHECK_URL,
@@ -37,6 +45,9 @@ namespace TempMail.API
             return Mails;
         }
 
+        /// <summary>
+        /// Checks for new mails.
+        /// </summary>
         public async Task<IEnumerable<Mail>> RefreshAsync()
         {
             var response = await client.SendRequestAsync(HttpMethod.Get, Urls.CHECK_URL,

@@ -21,12 +21,21 @@ namespace TempMail.API
         
         public bool IsAutoCheckRunning { get => CancellationToken != null && CancellationToken.Token.CanBeCanceled; }
 
+        /// <summary>
+        /// Gets available domains.
+        /// </summary>
         public List<string> AvailableDomains { get; private set; }
 
+        /// <summary>
+        /// Get current email.
+        /// </summary>
         public string Email { get => Uri.UnescapeDataString(GetCookie(Cookies.Mail).Value); }
-
+        
         public Inbox Inbox { get; }
 
+        /// <summary>
+        /// Occurs when the temporary email changes.
+        /// </summary>
         public event EventHandler<EmailChangedEventArgs> EmailChanged;
 
 
@@ -216,7 +225,7 @@ namespace TempMail.API
 
         private async Task RunAutoCheck(int delay = 10000)
         {
-            while (!CancellationToken.IsCancellationRequested)
+            while (CancellationToken != null && !CancellationToken.IsCancellationRequested)
             {
                 await Inbox.RefreshAsync();
                 await Task.Delay(delay);

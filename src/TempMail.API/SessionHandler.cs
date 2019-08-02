@@ -1,4 +1,6 @@
-﻿using System;
+﻿using CloudflareSolverRe;
+using CloudflareSolverRe.CaptchaProviders;
+using System;
 using System.Net;
 using System.Net.Http;
 using System.Runtime.InteropServices;
@@ -11,6 +13,9 @@ namespace TempMail.API
 {
     public class SessionHandler
     {
+        protected ICaptchaProvider captchaProvider;
+        protected IWebProxy proxy;
+
         internal CookieContainer cookieContainer;
 
         internal HttpClient HttpClient;
@@ -63,5 +68,31 @@ namespace TempMail.API
 
         internal void SetCookie(string name, string value) => cookieContainer.SetCookie(Urls.BASE_URL, name, value);
 
+
+        protected void CreateHttpClient()
+        {
+            cookieContainer = new CookieContainer();
+
+            var handler = new ClearanceHandler(captchaProvider)
+            {
+                InnerHandler = new HttpClientHandler
+                {
+                    CookieContainer = cookieContainer,
+                    AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate,
+                    Proxy = proxy
+                },
+                MaxTries = 5,
+                ClearanceDelay = 3000
+            };
+
+            HttpClient = new HttpClient(handler);
+
+            HttpClient.DefaultRequestHeaders.Add(HttpHeaders.Accept, HttpHeaderValues.GeneralAccept);
+            HttpClient.DefaultRequestHeaders.Add(HttpHeaders.AcceptLanguage, HttpHeaderValues.EnUs);
+            HttpClient.DefaultRequestHeaders.Add(HttpHeaders.UserAgent, HttpHeaderValues.Chrome75_Win10);
+            HttpClient.DefaultRequestHeaders.Add(HttpHeaders.Host, HttpHeaderValues.Host);
+            HttpClient.DefaultRequestHeaders.Add(HttpHeaders.UpgradeInsecureRequests, "1");
+            HttpClient.DefaultRequestHeaders.Add(HttpHeaders.Connection, HttpHeaderValues.KeepAlive);
+        }
     }
 }

@@ -1,4 +1,5 @@
-﻿using System.Threading;
+﻿using System;
+using System.Threading;
 using TempMail.API;
 
 namespace TempMail.Sample
@@ -8,6 +9,12 @@ namespace TempMail.Sample
         public static void Sample()
         {
             var client = TempMailClient.Create();
+
+            // To get the current email
+            var email = client.Email;
+
+            client.EmailChanged += (o, e) => Console.WriteLine($"Email changed: {e.Email}");
+            client.Inbox.NewMailReceived += (o, e) => Common.PrintMail(e.Mail);
 
             // To get the available domains
             var availableDomains = client.AvailableDomains;
@@ -23,7 +30,7 @@ namespace TempMail.Sample
             // To get Mailbox
             var mails = client.Inbox.Refresh();
 
-            // Prints Client Session data like current email, mails, ...etc
+            // Prints client session data like current email, mails, ...etc
             // Note: edit to print what you need
             Common.PrintClientData(client);
 
@@ -32,9 +39,6 @@ namespace TempMail.Sample
 
             // To delete email and get a new one
             client.Delete();
-
-            // To get the current email
-            var email = client.Email;
         }
     }
 }

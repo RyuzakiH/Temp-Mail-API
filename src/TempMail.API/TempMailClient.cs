@@ -1,4 +1,3 @@
-using CloudflareSolverRe;
 using CloudflareSolverRe.CaptchaProviders;
 using System;
 using System.Collections.Generic;
@@ -13,10 +12,9 @@ using TempMail.API.Utilities;
 
 namespace TempMail.API
 {
-    public class TempMailClient : SessionHandler
+    public class TempMailClient : SessionHandler, IDisposable
     {
-        private readonly ICaptchaProvider captchaProvider;
-        private IWebProxy proxy;
+        private bool disposed;
 
         public List<string> AvailableDomains { get; private set; }
 
@@ -85,6 +83,8 @@ namespace TempMail.API
         /// <param name="domain">New temporary email domain</param>
         public string ChangeEmail(string login, string domain)
         {
+            ThrowIfDisposed();
+
             if (!AvailableDomains.Contains(domain))
                 throw new Exception($"{Errors.InvalidDomain}: {domain}");
 
@@ -113,6 +113,8 @@ namespace TempMail.API
         /// <param name="domain">New temporary email domain</param>
         public async Task<string> ChangeEmailAsync(string login, string domain)
         {
+            ThrowIfDisposed();
+
             if (!AvailableDomains.Contains(domain))
                 throw new Exception($"{Errors.InvalidDomain}: {domain}");
 
@@ -140,9 +142,11 @@ namespace TempMail.API
         /// </summary>
         public bool Delete()
         {
+            ThrowIfDisposed();
+
             var response = SendRequest(HttpMethod.Get, Urls.DELETE_URL,
                 HttpHeaderValues.JsonAccept, new Uri(Urls.MAIN_PAGE_URL), null, true, false, true);
-            
+
             if (!response.IsSuccessStatusCode)
                 return false;
 
@@ -156,6 +160,8 @@ namespace TempMail.API
         /// </summary>
         public async Task<bool> DeleteAsync()
         {
+            ThrowIfDisposed();
+
             var response = await SendRequestAsync(HttpMethod.Get, Urls.DELETE_URL,
                 HttpHeaderValues.JsonAccept, new Uri(Urls.MAIN_PAGE_URL), null, true, false, true);
 
@@ -186,7 +192,24 @@ namespace TempMail.API
 
             EmailChanged?.Invoke(this, new EmailChangedEventArgs(Email));
         }
-        
+
+
+        public void Dispose()
+        {
+            HttpClient.Dispose();
+            cookieContainer = null;
+
+            AvailableDomains.Clear();
+            Inbox.Clear();
+
+            disposed = true;
+        }
+
+        private void ThrowIfDisposed()
+        {
+            if (disposed)
+                throw new ObjectDisposedException("TempMailClient");
+        }
 
         private void LoadMainPage() => HttpClient.GetString(Urls.MAIN_PAGE_URL);
         private async Task LoadMainPageAsync() => await HttpClient.GetStringAsync(Urls.MAIN_PAGE_URL);
@@ -196,33 +219,6 @@ namespace TempMail.API
             Parser.GetAvailableDomains(await HttpClient.GetStringAsync(Urls.CHANGE_URL));
 
         private void UpdateEmailCookie(string email) => SetCookie(Cookies.Mail, email);
-
-
-        private void CreateHttpClient()
-        {
-            cookieContainer = new CookieContainer();
-
-            var handler = new ClearanceHandler(captchaProvider)
-            {
-                InnerHandler = new HttpClientHandler
-                {
-                    CookieContainer = cookieContainer,
-                    AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate,
-                    Proxy = proxy
-                },
-                MaxTries = 5,
-                ClearanceDelay = 3000
-            };
-
-            HttpClient = new HttpClient(handler);
-
-            HttpClient.DefaultRequestHeaders.Add(HttpHeaders.Accept, HttpHeaderValues.GeneralAccept);
-            HttpClient.DefaultRequestHeaders.Add(HttpHeaders.AcceptLanguage, HttpHeaderValues.EnUs);
-            HttpClient.DefaultRequestHeaders.Add(HttpHeaders.UserAgent, HttpHeaderValues.Chrome75_Win10);
-            HttpClient.DefaultRequestHeaders.Add(HttpHeaders.Host, HttpHeaderValues.Host);
-            HttpClient.DefaultRequestHeaders.Add(HttpHeaders.UpgradeInsecureRequests, "1");
-            HttpClient.DefaultRequestHeaders.Add(HttpHeaders.Connection, HttpHeaderValues.KeepAlive);
-        }
 
     }
 }

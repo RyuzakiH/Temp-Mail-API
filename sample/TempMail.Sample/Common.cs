@@ -9,9 +9,9 @@ namespace TempMail.Sample
     public class Common
     {
         // Edit these
-        private const string FromEmail = "login@gmail.com";
+        private const string FromEmail = "zomablacktest@gmail.com";
         private const string FromDisplayName = "Ryuzaki";
-        private const string FromPassword = "password";
+        private const string FromPassword = "ABJrcz6d699C6Sj";
 
 
         public static void SendFakeMails(int count, string temp_email, int delay = 1000)
@@ -22,7 +22,6 @@ namespace TempMail.Sample
             for (int i = 0; i < count; i++)
             {
                 MailUtility.SendMail(from, to, FromPassword, $"Subject {i}", $"Fake Body {i}");
-
                 Thread.Sleep(delay);
             }
         }
@@ -35,7 +34,6 @@ namespace TempMail.Sample
             for (int i = 0; i < count; i++)
             {
                 await MailUtility.SendMailAsync(from, to, FromPassword, $"Subject {i}", $"Fake Body {i}");
-
                 Thread.Sleep(delay);
             }
         }

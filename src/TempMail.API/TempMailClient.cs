@@ -28,18 +28,33 @@ namespace TempMail.API
 
         public event EventHandler<EmailChangedEventArgs> EmailChanged;
 
-        public TempMailClient([Optional]ICaptchaProvider captchaProvider, [Optional]IWebProxy proxy)
+
+        public static TempMailClient Create([Optional]ICaptchaProvider captchaProvider, [Optional]IWebProxy proxy)
+        {
+            var client = new TempMailClient(captchaProvider, proxy);
+            client.StartNewSession();
+            return client;
+        }
+
+        public static async Task<TempMailClient> CreateAsync([Optional]ICaptchaProvider captchaProvider, [Optional]IWebProxy proxy)
+        {
+            var client = new TempMailClient(captchaProvider, proxy);
+            await client.StartNewSessionAsync();
+            return client;
+        }
+
+        internal TempMailClient([Optional]ICaptchaProvider captchaProvider, [Optional]IWebProxy proxy)
         {
             Inbox = new Inbox(this);
-
             this.captchaProvider = captchaProvider;
             this.proxy = proxy;
         }
 
+
         /// <summary>
         /// Starts a new client session and get a new temporary email.
         /// </summary>
-        public void StartNewSession()
+        internal void StartNewSession()
         {
             CreateHttpClient();
 
@@ -53,7 +68,7 @@ namespace TempMail.API
         /// <summary>
         /// Starts a new client session and get a new temporary email.
         /// </summary>
-        public async Task StartNewSessionAsync()
+        internal async Task StartNewSessionAsync()
         {
             await Task.Run(() => CreateHttpClient());
 

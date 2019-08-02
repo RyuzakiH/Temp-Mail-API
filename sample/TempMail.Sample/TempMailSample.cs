@@ -7,10 +7,7 @@ namespace TempMail.Sample
     {
         public static void Sample()
         {
-            var client = new TempMailClient();
-
-            // To get a new temporary email
-            client.StartNewSession();
+            var client = TempMailClient.Create();
 
             // To get the available domains
             var availableDomains = client.AvailableDomains;

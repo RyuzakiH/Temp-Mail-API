@@ -28,7 +28,7 @@ namespace TempMail.API
         public string TextBody => MimeMessage.TextBody;
         public string HtmlBody => MimeMessage.HtmlBody;
         public DateTimeOffset? Date => MimeMessage.Date;
-        public IEnumerable<MimePart> Attachments => MimeMessage.Attachments.Cast<MimePart>();
+        public IEnumerable<MimeEntity> Attachments => MimeMessage.Attachments;
 
 
         public Mail(TempMailClient client, string id)
@@ -91,13 +91,59 @@ namespace TempMail.API
         private static async Task<MimeMessage> GetMimeMessageAsync(string raw_mail) =>
             await MimeMessage.LoadAsync(raw_mail.ToMemoryStream());
 
-        public void SaveAttachment(MimePart attachment, string directory = "", string altFileName = null)
-        {
-            var fileName = attachment.FileName ?? altFileName ?? $"file{ new Random().Next(10000) }";
+        
+        public void SaveAttachments() => Attachments.ToList().ForEach(attachment => SaveAttachment(attachment));
 
+        public async Task SaveAttachmentsAsync()
+        {
+            foreach (var attachment in Attachments)
+                await SaveAttachmentAsync(attachment);
+        }
+
+        public static void SaveAttachment(MimeEntity attachment, string directory = "", string altFileName = null)
+        {
+            if (attachment is MessagePart)
+                SaveAttachment((MessagePart)attachment);
+            else
+                SaveAttachment((MimePart)attachment);
+        }
+
+        public static async Task SaveAttachmentAsync(MimeEntity attachment, string directory = "", string altFileName = null)
+        {
+            if (attachment is MessagePart)
+                await SaveAttachmentAsync((MessagePart)attachment);
+            else
+                await SaveAttachmentAsync((MimePart)attachment);
+        }
+
+        private static void SaveAttachment(MessagePart attachment, string directory = "", string altFileName = null)
+        {
+            var fileName = altFileName ?? Path.GetRandomFileName();
+            using (var stream = File.Create(Path.Combine(directory, fileName)))
+                attachment.Message.WriteTo(stream);
+        }
+
+        private static async Task SaveAttachmentAsync(MessagePart attachment, string directory = "", string altFileName = null)
+        {
+            var fileName = altFileName ?? Path.GetRandomFileName();
+            using (var stream = File.Create(Path.Combine(directory, fileName)))
+                await attachment.Message.WriteToAsync(stream);
+        }
+
+        private static void SaveAttachment(MimePart attachment, string directory = "", string altFileName = null)
+        {
+            var fileName = attachment.FileName ?? altFileName ?? Path.GetRandomFileName();
             using (var stream = File.Create(Path.Combine(directory, fileName)))
                 attachment.Content.DecodeTo(stream);
         }
+
+        private static async Task SaveAttachmentAsync(MimePart attachment, string directory = "", string altFileName = null)
+        {
+            var fileName = attachment.FileName ?? altFileName ?? Path.GetRandomFileName();
+            using (var stream = File.Create(Path.Combine(directory, fileName)))
+                await attachment.Content.DecodeToAsync(stream);
+        }
+
 
         private static Uri CreateSourceLink(string id) => new Uri($"https://temp-mail.org/en/source/{id}/");
 

@@ -17,7 +17,7 @@ namespace TempMail.API
     {
         private bool disposed;
 
-        public CancellationTokenSource CancellationToken { get; set; }
+        private CancellationTokenSource CancellationToken;
         
         public bool IsAutoCheckRunning { get => CancellationToken != null && CancellationToken.Token.CanBeCanceled; }
 
@@ -30,6 +30,9 @@ namespace TempMail.API
         public event EventHandler<EmailChangedEventArgs> EmailChanged;
 
 
+        /// <summary>
+        /// Creates a new temp-mail client.
+        /// </summary>
         public static TempMailClient Create([Optional]ICaptchaProvider captchaProvider, [Optional]IWebProxy proxy)
         {
             var client = new TempMailClient(captchaProvider, proxy);
@@ -37,6 +40,9 @@ namespace TempMail.API
             return client;
         }
 
+        /// <summary>
+        /// Creates a new temp-mail client.
+        /// </summary>
         public static async Task<TempMailClient> CreateAsync([Optional]ICaptchaProvider captchaProvider, [Optional]IWebProxy proxy)
         {
             var client = new TempMailClient(captchaProvider, proxy);
@@ -52,9 +58,6 @@ namespace TempMail.API
         }
 
 
-        /// <summary>
-        /// Starts a new client session and get a new temporary email.
-        /// </summary>
         internal void StartSession()
         {
             CreateHttpClient();
@@ -66,9 +69,6 @@ namespace TempMail.API
             AvailableDomains = GetAvailableDomains();
         }
 
-        /// <summary>
-        /// Starts a new client session and get a new temporary email.
-        /// </summary>
         internal async Task StartSessionAsync()
         {
             await Task.Run(() => CreateHttpClient());
@@ -199,6 +199,9 @@ namespace TempMail.API
         }
 
 
+        /// <summary>
+        /// Starts inbox mails auto checking every delay of time.
+        /// </summary>
         public void StartAutoCheck(int delay = 10000)
         {
             ThrowIfDisposed();
@@ -220,6 +223,9 @@ namespace TempMail.API
             }
         }
 
+        /// <summary>
+        /// Stops inbox mails auto checking.
+        /// </summary>
         public void StopAutoCheck()
         {
             ThrowIfDisposed();

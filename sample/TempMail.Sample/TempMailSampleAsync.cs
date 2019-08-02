@@ -1,4 +1,6 @@
-﻿using System;
+﻿using CloudflareSolverRe.CaptchaProviders;
+using System;
+using System.Net;
 using System.Threading.Tasks;
 using TempMail.API;
 
@@ -10,6 +12,38 @@ namespace TempMail.Sample
         {
             var client = await TempMailClient.CreateAsync();
 
+            await Sample(client);
+        }
+
+        public static async Task SampleWithCaptchaProvider()
+        {
+            // Used if temp-mail is using cloudflare protection and it's not solved with JS (if needed).
+            var client = TempMailClient.Create(
+                captchaProvider: new AntiCaptchaProvider("YOUR_API_KEY"));
+
+            await Sample(client);
+        }
+
+        public static async Task SampleWithProxy()
+        {
+            var client = TempMailClient.Create(
+                proxy: new WebProxy("163.172.220.221", 8888));
+
+            await Sample(client);
+        }
+
+        public static async Task SampleWithCaptchaProviderAndProxy()
+        {
+            var client = TempMailClient.Create(
+                captchaProvider: new AntiCaptchaProvider("YOUR_API_KEY"),
+                proxy: new WebProxy("163.172.220.221", 8888));
+
+            await Sample(client);
+        }
+
+
+        public static async Task Sample(TempMailClient client)
+        {
             // To get the available domains
             var availableDomains = client.AvailableDomains;
 

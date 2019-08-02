@@ -1,4 +1,6 @@
-﻿using System;
+﻿using CloudflareSolverRe.CaptchaProviders;
+using System;
+using System.Net;
 using System.Threading;
 using TempMail.API;
 
@@ -10,6 +12,37 @@ namespace TempMail.Sample
         {
             var client = TempMailClient.Create();
 
+            Sample(client);
+        }
+
+        public static void SampleWithCaptchaProvider()
+        {
+            // Used if temp-mail is using cloudflare protection and it's not solved with JS (if needed).
+            var client = TempMailClient.Create(
+                captchaProvider: new AntiCaptchaProvider("YOUR_API_KEY"));
+
+            Sample(client);
+        }
+
+        public static void SampleWithProxy()
+        {
+            var client = TempMailClient.Create(
+                proxy: new WebProxy("163.172.220.221", 8888));
+
+            Sample(client);
+        }
+
+        public static void SampleWithCaptchaProviderAndProxy()
+        {
+            var client = TempMailClient.Create(
+                captchaProvider: new AntiCaptchaProvider("YOUR_API_KEY"),
+                proxy: new WebProxy("163.172.220.221", 8888));
+
+            Sample(client);
+        }
+
+        private static void Sample(TempMailClient client)
+        {
             // To get the available domains
             var availableDomains = client.AvailableDomains;
 
@@ -18,7 +51,7 @@ namespace TempMail.Sample
 
             client.EmailChanged += (o, e) => Console.WriteLine($"Email changed: {e.Email}");
             client.Inbox.NewMailReceived += (o, e) => Common.PrintMail(e.Mail);
-            
+
             // Sends fake mails from your email to generated temporary email
             // Note: edit sender email credentials (email, password)
             // Note: you can use any free email sender service online instead
@@ -47,7 +80,7 @@ namespace TempMail.Sample
             var mails = client.Inbox.Refresh();
 
             Console.WriteLine("4 mails (all mails)");
-            Common.PrintClientData(client);            
+            Common.PrintClientData(client);
 
             // To change email to a specific login@domain
             client.ChangeEmail("loginexample", availableDomains[0]);

@@ -22,16 +22,16 @@ namespace TempMail.API
                 request.Content = content;
 
             if (accept != null)
-                request.Headers.Add("Accept", accept);
+                request.Headers.Add(HttpHeaders.Accept, accept);
 
             if (referrer != null)
                 request.Headers.Referrer = referrer;
 
             if (xml)
-                request.Headers.Add("X-Requested-With", "XMLHttpRequest");
+                request.Headers.Add(HttpHeaders.XRequestedWith, HttpHeaderValues.XmlHttpRequest);
 
             if (origin)
-                request.Headers.Add("Origin", request.RequestUri.Host);
+                request.Headers.Add(HttpHeaders.Origin, request.RequestUri.Host);
         }
 
         internal HttpResponseMessage SendRequest(HttpMethod method, string requestUrl, [Optional]string accept, [Optional]Uri referrer, [Optional]HttpContent content, bool xml = false, bool origin = false, bool jsDateQuery = false)

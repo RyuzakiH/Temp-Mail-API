@@ -3,7 +3,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using TempMail.API.Extensions;
 using TempMail.API.Utilities;
@@ -36,14 +35,14 @@ namespace TempMail.API
         {
             this.client = client;
             Id = id;
-            Link = Links.CreateSourceLink(id);
+            Link = CreateSourceLink(id);
         }
 
         public Mail(TempMailClient client, Uri link)
         {
             this.client = client;
             Link = link;
-            Id = Links.GetId(link);
+            Id = Parser.GetMailId(link);
         }
 
 
@@ -94,5 +93,8 @@ namespace TempMail.API
             using (var stream = File.Create(Path.Combine(directory, fileName)))
                 attachment.Content.DecodeTo(stream);
         }
+
+        private static Uri CreateSourceLink(string id) => new Uri($"https://temp-mail.org/en/source/{id}/");
+
     }
 }

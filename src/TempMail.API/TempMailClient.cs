@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
 using System.Runtime.InteropServices;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using TempMail.API.Constants;
 using TempMail.API.Events;
@@ -19,12 +18,11 @@ namespace TempMail.API
         private readonly ICaptchaProvider captchaProvider;
         private IWebProxy proxy;
 
-        private List<string> availableDomains;
-        public List<string> AvailableDomains => availableDomains ?? (availableDomains = GetAvailableDomains());
+        public List<string> AvailableDomains { get; private set; }
+
+        public string Email { get => Uri.UnescapeDataString(GetCookie(Cookies.Mail).Value); }
 
         public Inbox Inbox { get; }
-
-        public string Email { get; set; }
 
         public event EventHandler<EmailChangedEventArgs> EmailChanged;
 
@@ -60,9 +58,9 @@ namespace TempMail.API
 
             EmailChanged += (o, e) => Inbox.Clear();
 
-            var document = HttpClient.GetString(Urls.MAIN_PAGE_URL);
+            LoadMainPage();
 
-            Email = Parser.ExtractEmail(document);
+            AvailableDomains = GetAvailableDomains();
         }
 
         /// <summary>
@@ -74,9 +72,9 @@ namespace TempMail.API
 
             EmailChanged += (o, e) => Inbox.Clear();
 
-            var document = await HttpClient.GetStringAsync(Urls.MAIN_PAGE_URL);
+            await LoadMainPageAsync();
 
-            Email = await Task.Run(() => Parser.ExtractEmail(document));
+            AvailableDomains = await GetAvailableDomainsAsync();
         }
 
 
@@ -88,22 +86,20 @@ namespace TempMail.API
         public string ChangeEmail(string login, string domain)
         {
             if (!AvailableDomains.Contains(domain))
-                throw new Exception(string.Format("The domain you entered is not an available domain: {0}", domain));
+                throw new Exception($"{Errors.InvalidDomain}: {domain}");
 
             var data = new Dictionary<string, string>
             {
-                { "csrf", GetCookie("csrf").Value },
-                { "mail", login },
-                { "domain", Utils.NormalizeDomain(domain) },
+                { Cookies.Csrf, GetCookie(Cookies.Csrf).Value },
+                { Cookies.Mail, login },
+                { General.Domain, Utils.NormalizeDomain(domain) }
             };
 
             var response = SendRequest(HttpMethod.Post, Urls.CHANGE_URL,
                 referrer: new Uri(Urls.CHANGE_URL), content: new FormUrlEncodedContent(data), origin: true);
 
-            if (response.StatusCode != HttpStatusCode.OK)
+            if (!response.IsSuccessStatusCode)
                 return null;
-
-            Email = $"{login}{Utils.NormalizeDomain(domain)}";
 
             EmailChanged?.Invoke(this, new EmailChangedEventArgs(Email));
 
@@ -118,22 +114,20 @@ namespace TempMail.API
         public async Task<string> ChangeEmailAsync(string login, string domain)
         {
             if (!AvailableDomains.Contains(domain))
-                throw new Exception(string.Format("The domain you entered is not an available domain: {0}", domain));
+                throw new Exception($"{Errors.InvalidDomain}: {domain}");
 
             var data = new Dictionary<string, string>
             {
-                { "csrf", GetCookie("csrf").Value },
-                { "mail", login },
-                { "domain", Utils.NormalizeDomain(domain) },
+                { Cookies.Csrf, GetCookie(Cookies.Csrf).Value },
+                { Cookies.Mail, login },
+                { General.Domain, Utils.NormalizeDomain(domain) }
             };
 
             var response = await SendRequestAsync(HttpMethod.Post, Urls.CHANGE_URL,
                 referrer: new Uri(Urls.CHANGE_URL), content: new FormUrlEncodedContent(data), origin: true);
 
-            if (response.StatusCode != HttpStatusCode.OK)
+            if (!response.IsSuccessStatusCode)
                 return null;
-
-            Email = $"{login}{Utils.NormalizeDomain(domain)}";
 
             EmailChanged?.Invoke(this, new EmailChangedEventArgs(Email));
 
@@ -147,17 +141,12 @@ namespace TempMail.API
         public bool Delete()
         {
             var response = SendRequest(HttpMethod.Get, Urls.DELETE_URL,
-                "application/json, text/javascript, */*; q=0.01",
-                new Uri(Urls.MAIN_PAGE_URL), null, true, false, true);
-
-            if (response.StatusCode != HttpStatusCode.OK)
+                HttpHeaderValues.JsonAccept, new Uri(Urls.MAIN_PAGE_URL), null, true, false, true);
+            
+            if (!response.IsSuccessStatusCode)
                 return false;
 
-            Email = Parser.ExtractEmailFromDeleteResponse(response.Content.ReadAsString());
-
-            UpdateEmailCookie();
-
-            EmailChanged?.Invoke(this, new EmailChangedEventArgs(Email));
+            UpdateEmail(response);
 
             return true;
         }
@@ -168,25 +157,45 @@ namespace TempMail.API
         public async Task<bool> DeleteAsync()
         {
             var response = await SendRequestAsync(HttpMethod.Get, Urls.DELETE_URL,
-                "application/json, text/javascript, */*; q=0.01",
-                new Uri(Urls.MAIN_PAGE_URL), null, true, false, true);
+                HttpHeaderValues.JsonAccept, new Uri(Urls.MAIN_PAGE_URL), null, true, false, true);
 
-            if (response.StatusCode != HttpStatusCode.OK)
+            if (!response.IsSuccessStatusCode)
                 return false;
 
-            Email = (await Task.Run(() => Regex.Match(response.Content.ReadAsString(), @"{""mail""\s*:\s*""(?<mail>.*?)""}").Groups["mail"].Value));
-
-            await Task.Run(() => UpdateEmailCookie());
-
-            EmailChanged?.Invoke(this, new EmailChangedEventArgs(Email));
+            await UpdateEmailAsync(response);
 
             return true;
         }
 
+        private void UpdateEmail(HttpResponseMessage response)
+        {
+            var result = response.Content.ReadAsString();
 
-        private List<string> GetAvailableDomains() => Parser.ExtractAvailableDomains(HttpClient.GetString(Urls.CHANGE_URL));
+            var email = Parser.GetEmail(result);
+            UpdateEmailCookie(email);
 
-        private void UpdateEmailCookie() => SetCookie("mail", Email);
+            EmailChanged?.Invoke(this, new EmailChangedEventArgs(Email));
+        }
+
+        private async Task UpdateEmailAsync(HttpResponseMessage response)
+        {
+            var result = await response.Content.ReadAsStringAsync();
+
+            var email = await Task.Run(() => Parser.GetEmail(result));
+            UpdateEmailCookie(email);
+
+            EmailChanged?.Invoke(this, new EmailChangedEventArgs(Email));
+        }
+        
+
+        private void LoadMainPage() => HttpClient.GetString(Urls.MAIN_PAGE_URL);
+        private async Task LoadMainPageAsync() => await HttpClient.GetStringAsync(Urls.MAIN_PAGE_URL);
+
+        private List<string> GetAvailableDomains() => Parser.GetAvailableDomains(HttpClient.GetString(Urls.CHANGE_URL));
+        private async Task<List<string>> GetAvailableDomainsAsync() =>
+            Parser.GetAvailableDomains(await HttpClient.GetStringAsync(Urls.CHANGE_URL));
+
+        private void UpdateEmailCookie(string email) => SetCookie(Cookies.Mail, email);
 
 
         private void CreateHttpClient()
@@ -207,12 +216,12 @@ namespace TempMail.API
 
             HttpClient = new HttpClient(handler);
 
-            HttpClient.DefaultRequestHeaders.Add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3");
-            HttpClient.DefaultRequestHeaders.Add("Accept-Language", "en-US,en;q=0.9");
-            HttpClient.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.142 Safari/537.36");
-            HttpClient.DefaultRequestHeaders.Add("Host", "temp-mail.org");
-            HttpClient.DefaultRequestHeaders.Add("Upgrade-Insecure-Requests", "1");
-            HttpClient.DefaultRequestHeaders.Add("Connection", "keep-alive");
+            HttpClient.DefaultRequestHeaders.Add(HttpHeaders.Accept, HttpHeaderValues.GeneralAccept);
+            HttpClient.DefaultRequestHeaders.Add(HttpHeaders.AcceptLanguage, HttpHeaderValues.EnUs);
+            HttpClient.DefaultRequestHeaders.Add(HttpHeaders.UserAgent, HttpHeaderValues.Chrome75_Win10);
+            HttpClient.DefaultRequestHeaders.Add(HttpHeaders.Host, HttpHeaderValues.Host);
+            HttpClient.DefaultRequestHeaders.Add(HttpHeaders.UpgradeInsecureRequests, "1");
+            HttpClient.DefaultRequestHeaders.Add(HttpHeaders.Connection, HttpHeaderValues.KeepAlive);
         }
 
     }

@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Linq;
 using System.Net.Mail;
 using System.Threading;
 using System.Threading.Tasks;
@@ -50,10 +49,7 @@ namespace TempMail.Sample
         }
 
         public static void PrintMail(Mail mail) =>
-            Console.WriteLine($"\tSender: {mail.From.FirstOrDefault().Name}\n\tSubject: {mail.Subject}\n\tBody: {mail.TextBody}");
-
-
-
+            Console.WriteLine($"\tSender: {mail.SenderName}\n\tSubject: {mail.Subject}\n\tBody: {mail.TextBody}");
 
     }
 }

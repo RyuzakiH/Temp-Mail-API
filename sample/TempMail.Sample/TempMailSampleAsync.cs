@@ -29,7 +29,7 @@ namespace TempMail.Sample
             Common.PrintClientData(client);
 
             // To change email to a specific login@domain
-            await client.ChangeAsync("loginexample", availableDomains[0]);
+            await client.ChangeEmailAsync("loginexample", availableDomains[0]);
 
             // To delete email and get a new one
             await client.DeleteAsync();

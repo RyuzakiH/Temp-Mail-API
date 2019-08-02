@@ -22,7 +22,7 @@ namespace TempMail.API
         private List<string> availableDomains;
         public List<string> AvailableDomains => availableDomains ?? (availableDomains = GetAvailableDomains());
 
-        public Inbox Inbox;
+        public Inbox Inbox { get; }
 
         public string Email { get; set; }
 
@@ -85,7 +85,7 @@ namespace TempMail.API
         /// </summary>
         /// <param name="login">New temporary email login</param>
         /// <param name="domain">New temporary email domain</param>
-        public string Change(string login, string domain)
+        public string ChangeEmail(string login, string domain)
         {
             if (!AvailableDomains.Contains(domain))
                 throw new Exception(string.Format("The domain you entered is not an available domain: {0}", domain));
@@ -115,7 +115,7 @@ namespace TempMail.API
         /// </summary>
         /// <param name="login">New temporary email login</param>
         /// <param name="domain">New temporary email domain</param>
-        public async Task<string> ChangeAsync(string login, string domain)
+        public async Task<string> ChangeEmailAsync(string login, string domain)
         {
             if (!AvailableDomains.Contains(domain))
                 throw new Exception(string.Format("The domain you entered is not an available domain: {0}", domain));

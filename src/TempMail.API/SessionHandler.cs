@@ -39,7 +39,7 @@ namespace TempMail.API
             if (jsDateQuery)
                 requestUrl += $"{(requestUrl.EndsWith("/") ? "" : @"/")}?_={Utils.GetJavascriptDate()}";
 
-            using (var request = new HttpRequestMessage(HttpMethod.Get, requestUrl))
+            using (var request = new HttpRequestMessage(method, requestUrl))
             {
                 PrepareHttpRequest(request, accept, referrer, content, xml, origin);
                 return HttpClient.Send(request);
@@ -51,7 +51,7 @@ namespace TempMail.API
             if (jsDateQuery)
                 requestUrl += $"{(requestUrl.EndsWith("/") ? "" : @"/")}?_={Utils.GetJavascriptDate()}";
 
-            using (var request = new HttpRequestMessage(HttpMethod.Get, requestUrl))
+            using (var request = new HttpRequestMessage(method, requestUrl))
             {
                 PrepareHttpRequest(request, accept, referrer, content, xml, origin);
                 return await HttpClient.SendAsync(request);

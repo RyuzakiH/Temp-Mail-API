@@ -28,7 +28,7 @@ namespace TempMail.Sample
             Common.PrintClientData(client);
 
             // To change email to a specific login@domain
-            client.Change("loginexample", availableDomains[0]);
+            client.ChangeEmail("loginexample", availableDomains[0]);
 
             // To delete email and get a new one
             client.Delete();

@@ -79,7 +79,7 @@ namespace TempMail.Sample
             Common.PrintClientData(client);
 
             // To get all mails in mailbox
-            client.Inbox.Refresh();
+            await client.Inbox.RefreshAsync();
 
             // To access mails
             var mails = client.Inbox.Mails;

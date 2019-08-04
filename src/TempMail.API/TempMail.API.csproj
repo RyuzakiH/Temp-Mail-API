@@ -5,11 +5,13 @@
     <Authors>RyuzakiH</Authors>
     <Company>Zero</Company>
     <Product />
-    <Description>Unofficial API for temp-mail.org</Description>
-    <RepositoryUrl></RepositoryUrl>
+    <Description>Unofficial API Client Library for temp-mail.org in .NET Standard</Description>
+    <RepositoryUrl>https://github.com/RyuzakiH/Temp-Mail-API</RepositoryUrl>
     <PackageProjectUrl>https://github.com/RyuzakiH/Temp-Mail-API</PackageProjectUrl>
-    <PackageTags>api library tempmail temp-mail.org HTTP mail email wrapper</PackageTags>
-    <Version>1.1.5</Version>
+    <PackageTags>api client library temp-mail tempmail temp-mail.org HTTP mail email wrapper</PackageTags>
+    <Version>2.0.0</Version>
+    <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
+    <PackageLicenseUrl>https://github.com/RyuzakiH/Temp-Mail-API/blob/master/LICENSE</PackageLicenseUrl>
   </PropertyGroup>
 
   <ItemGroup>

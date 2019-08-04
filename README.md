@@ -14,6 +14,7 @@ Unofficial API Client Library for [TempMail](https://temp-mail.org) in .NET Stan
 # Usage
 
 - #### Initialize Client
+_Creates and initializes a new temp-mail client with a temporary email_
 
 ```csharp
 var client = TempMailClient.Create();

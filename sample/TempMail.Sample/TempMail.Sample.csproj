@@ -15,4 +15,8 @@
     <ProjectReference Include="..\..\src\TempMail.API\TempMail.API.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Attachments\" />
+  </ItemGroup>
+
 </Project>

@@ -57,6 +57,7 @@ namespace TempMail.Sample
             // Note: you can use any free email sender service online instead
             Common.SendFakeMails(2, client.Email, 1000);
 
+            // Checks for incoming mails every period of time
             client.StartAutoCheck();
 
             // Wait for the mails to reach the temp-mail            
@@ -69,18 +70,24 @@ namespace TempMail.Sample
             client.StopAutoCheck();
 
             // give it 10s delay to make sure it reached temp-mail
-            Common.SendFakeMails(1, client.Email, 10000);
+            Common.SendFakeMails(1, client.Email, 10000, true);
 
             // Prints client session data like current email, mails, ...etc
             // Note: edit to print what you need
             Console.WriteLine("Only 3 mails, as we stopped auto check so we need to explicitly use refresh");
             Common.PrintClientData(client);
 
-            // To get Mailbox
-            var mails = client.Inbox.Refresh();
+            // To get all mails in mailbox
+            client.Inbox.Refresh();
+
+            // To access mails
+            var mails = client.Inbox.Mails;
 
             Console.WriteLine("4 mails (all mails)");
             Common.PrintClientData(client);
+
+            // To save attachments
+            mails.ForEach(mail => mail.SaveAttachments());
 
             // To change email to a specific login@domain
             client.ChangeEmail("loginexample", availableDomains[0]);

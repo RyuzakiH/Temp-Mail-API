@@ -7,7 +7,7 @@ namespace TempMail.Sample
         static void Main(string[] args)
         {
             Console.WriteLine("Synchronous sample:\n===================");
-            //TempMailSample.Sample();
+            TempMailSample.Sample();
 
             Console.WriteLine("Asynchronous sample:\n====================");
             TempMailSampleAsync.Sample().Wait();

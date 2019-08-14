@@ -2,20 +2,20 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard1.3</TargetFramework>
-    <Authors>RyuzakiH</Authors>
+    <PackageId>TempMail.API</PackageId>
+	<Authors>RyuzakiH</Authors>
     <Company>Zero</Company>
-    <Product />
     <Description>Unofficial API Client Library for temp-mail.org in .NET Standard</Description>
     <RepositoryUrl>https://github.com/RyuzakiH/Temp-Mail-API</RepositoryUrl>
     <PackageProjectUrl>https://github.com/RyuzakiH/Temp-Mail-API</PackageProjectUrl>
     <PackageTags>api client library temp-mail tempmail temp-mail.org HTTP mail email wrapper</PackageTags>
-    <Version>2.0.0</Version>
+    <Version>2.0.1</Version>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
     <PackageLicenseUrl>https://github.com/RyuzakiH/Temp-Mail-API/blob/master/LICENSE</PackageLicenseUrl>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="CloudflareSolverRe" Version="1.0.3" />
+    <PackageReference Include="CloudflareSolverRe" Version="1.0.4" />
     <PackageReference Include="MimeKitLite" Version="2.2.0" />
   </ItemGroup>
 

@@ -125,7 +125,7 @@ var client = TempMailClient.Create(
     proxy: new WebProxy("163.172.220.221", 8888));
 ```
 
-Full Examples [Here](https://github.com/RyuzakiH/Temp-Mail-API/tree/master/sample/TempMail.Sample)
+**Full Examples [Here](https://github.com/RyuzakiH/Temp-Mail-API/tree/master/sample/TempMail.Sample)**
 
 # Supported Platforms
 [.NET Standard 1.3](https://github.com/dotnet/standard/blob/master/docs/versions.md)
